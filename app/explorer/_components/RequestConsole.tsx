@@ -130,6 +130,13 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
     }
   }
 
+  // Auto-send on mount or when token becomes available
+  useEffect(() => {
+    if (token && method === 'GET' && !resp && !loading) {
+      send()
+    }
+  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Update a row. If editing the last row, add a new one.
   const updateQueryParam = (idx: number, k: keyof typeof queryParams[0], v: string) => {
     const copy = [...queryParams]

@@ -11,7 +11,13 @@ export default function Page() {
   const [token, setToken] = useState<string>('')
 
   useEffect(() => {
-    setToken(localStorage.getItem('sovd.token') || '')
+    const t = localStorage.getItem('sovd.token')
+    if (t) {
+      setToken(t)
+    } else {
+      // Auto-issue token if none exists so the explorer works immediately
+      issueToken()
+    }
   }, [])
 
   async function issueToken() {
@@ -112,6 +118,7 @@ export default function Page() {
         <div className="flex-1 flex flex-col bg-white min-w-0">
           <div className="p-4 h-full">
             <RequestConsole
+              key={`${selectedPath}-${selectedMethod}`}
               initialPath={selectedPath}
               initialMethod={selectedMethod}
               token={token}
