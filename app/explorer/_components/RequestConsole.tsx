@@ -18,11 +18,77 @@ function useToken() {
 type Tab = 'params' | 'headers' | 'body'
 type ResponseTab = 'body' | 'headers'
 
+// ASAM SOVD v1.0 Parameter Presets per resource type
+const PARAMETER_PRESETS: Record<string, Array<{ key: string; value: string }>> = {
+  faults: [
+    { key: 'include-schema', value: 'false' },
+    { key: 'status[timestamp]', value: '' },
+    { key: 'status[responseCode]', value: '' },
+    { key: 'status[responseMessage]', value: '' },
+    { key: 'severity', value: '' },
+    { key: 'scopeParameter', value: '' },
+    { key: '', value: '' }
+  ],
+  logs: [
+    { key: 'include-schema', value: 'false' },
+    { key: 'status[timestamp]', value: '' },
+    { key: 'status[stationInfo]', value: '' },
+    { key: '', value: '' }
+  ],
+  operations: [
+    { key: 'include-schema', value: 'false' },
+    { key: 'scopeParameter', value: '' },
+    { key: '', value: '' }
+  ],
+  data: [
+    { key: 'include-schema', value: 'false' },
+    { key: '', value: '' }
+  ],
+  'data-lists': [
+    { key: 'include-schema', value: 'false' },
+    { key: '', value: '' }
+  ],
+  configurations: [
+    { key: 'include-schema', value: 'false' },
+    { key: '', value: '' }
+  ],
+  'bulk-data': [
+    { key: 'include-schema', value: 'false' },
+    { key: '', value: '' }
+  ],
+  updates: [
+    { key: 'include-schema', value: 'false' },
+    { key: 'status[timestamp]', value: '' },
+    { key: '', value: '' }
+  ],
+  modes: [
+    { key: 'include-schema', value: 'false' },
+    { key: '', value: '' }
+  ],
+  locks: [
+    { key: 'include-schema', value: 'false' },
+    { key: 'scopeParameter', value: '' },
+    { key: '', value: '' }
+  ],
+  default: [
+    { key: 'include-schema', value: 'false' },
+    { key: '', value: '' },
+    { key: '', value: '' },
+    { key: '', value: '' }
+  ]
+}
+
+// Helper to detect resource type from path
+function getResourceType(path: string): string {
+  const match = path.match(/\/(faults|logs|operations|data|data-lists|configurations|bulk-data|updates|modes|locks|subareas|subcomponents)(?:\/|$)/)
+  return match ? match[1] : 'default'
+}
+
 export default function RequestConsole({ initialPath, initialMethod, token: propToken }: RequestConsoleProps) {
   const internalToken = useToken()
   const token = typeof propToken !== 'undefined' ? propToken : internalToken
 
-  const [path, setPath] = useState(initialPath || '/v1/App/WindowControl/data')
+  const [path, setPath] = useState(initialPath || '/v1/Component')
   // Sync prop changes to state
   useEffect(() => {
     if (initialPath) setPath(initialPath)
@@ -37,12 +103,18 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
 
   // Request State
   const [activeTab, setActiveTab] = useState<Tab>('params')
-  const [queryParams, setQueryParams] = useState<Array<{ key: string; value: string }>>([
-    { key: 'include-schema', value: 'false' },
-    { key: '', value: '' },
-    { key: '', value: '' },
-    { key: '', value: '' }
-  ])
+
+  // Initialize with default params, will be updated based on path
+  const [queryParams, setQueryParams] = useState<Array<{ key: string; value: string }>>(
+    PARAMETER_PRESETS.default
+  )
+
+  // Auto-populate parameters when path changes
+  useEffect(() => {
+    const resourceType = getResourceType(path)
+    const preset = PARAMETER_PRESETS[resourceType] || PARAMETER_PRESETS.default
+    setQueryParams([...preset])
+  }, [path])
   const [headers, setHeaders] = useState<Array<{ key: string; value: string }>>([
     { key: 'Accept', value: 'application/json' },
     { key: 'Content-Type', value: 'application/json' },

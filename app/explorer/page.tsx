@@ -4,7 +4,7 @@ import Tree from './_components/Tree'
 import RequestConsole from './_components/RequestConsole'
 
 export default function Page() {
-  const [selectedPath, setSelectedPath] = useState('/v1/App/WindowControl/data')
+  const [selectedPath, setSelectedPath] = useState('/v1/Component')
   const [selectedMethod, setSelectedMethod] = useState('GET')
   const [showAuth, setShowAuth] = useState(false)
   const [role, setRole] = useState<'Viewer' | 'Developer' | 'Admin'>('Developer')

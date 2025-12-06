@@ -26,30 +26,76 @@ async function apiGet(path: string, token: string) {
   }
 }
 
-const RESOURCES = [
-  'configurations',
-  'bulk-data',
-  'data',
-  'data-lists',
-  'faults',
-  'operations',
-  'updates',
-  'modes',
-  'locks',
-  'logs'
-]
+// Resource mappings per ASAM SOVD v1.0 specification
+type ResourceDef = { name: string; methods: string[] }
+
+const RESOURCE_MAP: Record<string, ResourceDef[]> = {
+  Component: [
+    { name: 'configurations', methods: ['GET'] },
+    { name: 'bulk-data', methods: ['GET'] },
+    { name: 'data', methods: ['GET', 'POST'] },
+    { name: 'data-lists', methods: ['GET', 'POST'] },
+    { name: 'faults', methods: ['GET', 'DELETE'] },
+    { name: 'operations', methods: ['GET', 'POST'] },
+    { name: 'updates', methods: ['GET', 'POST'] },
+    { name: 'modes', methods: ['GET'] },
+    { name: 'locks', methods: ['GET', 'POST'] },
+    { name: 'logs', methods: ['GET'] },
+    { name: 'subareas', methods: ['GET'] },
+    { name: 'subcomponents', methods: ['GET'] }
+  ],
+  App: [
+    { name: 'configurations', methods: ['GET'] },
+    { name: 'bulk-data', methods: ['GET'] },
+    { name: 'data', methods: ['GET', 'POST'] },
+    { name: 'data-lists', methods: ['GET', 'POST'] },
+    { name: 'faults', methods: ['GET', 'DELETE'] },
+    { name: 'operations', methods: ['GET', 'POST'] },
+    { name: 'updates', methods: ['GET', 'POST'] },
+    { name: 'modes', methods: ['GET'] },
+    { name: 'locks', methods: ['GET', 'POST'] },
+    { name: 'logs', methods: ['GET'] }
+  ],
+  Function: [
+    { name: 'configurations', methods: ['GET'] },
+    { name: 'bulk-data', methods: ['GET'] },
+    { name: 'data', methods: ['GET', 'POST'] },
+    { name: 'data-lists', methods: ['GET', 'POST'] },
+    { name: 'faults', methods: ['GET', 'DELETE'] },
+    { name: 'operations', methods: ['GET', 'POST'] },
+    { name: 'updates', methods: ['GET', 'POST'] },
+    { name: 'modes', methods: ['GET'] },
+    { name: 'locks', methods: ['GET', 'POST'] },
+    { name: 'logs', methods: ['GET'] }
+  ],
+  Area: [
+    { name: 'configurations', methods: ['GET'] },
+    { name: 'bulk-data', methods: ['GET'] },
+    { name: 'data', methods: ['GET', 'POST'] },
+    { name: 'data-lists', methods: ['GET', 'POST'] },
+    { name: 'faults', methods: ['GET', 'DELETE'] },
+    { name: 'operations', methods: ['GET', 'POST'] },
+    { name: 'updates', methods: ['GET', 'POST'] },
+    { name: 'modes', methods: ['GET'] },
+    { name: 'locks', methods: ['GET', 'POST'] },
+    { name: 'logs', methods: ['GET'] },
+    { name: 'subareas', methods: ['GET'] },
+    { name: 'subcomponents', methods: ['GET'] }
+  ]
+}
 
 export default function Tree({ onSelect, token: propToken }: TreeProps) {
   const internalToken = useToken()
   const token = typeof propToken !== 'undefined' ? propToken : internalToken
   // Expanded states
-  const [expandedCollections, setExpandedCollections] = useState<Set<string>>(new Set(['App']))
+  const [expandedCollections, setExpandedCollections] = useState<Set<string>>(new Set(['Component']))
   const [expandedEntities, setExpandedEntities] = useState<Set<string>>(new Set())
 
   // Data states
   const [entities, setEntities] = useState<Record<string, string[]>>({})
 
-  const COLLECTIONS = ['Area', 'Component', 'App', 'Function']
+  // Order per ASAM SOVD and UI reference: Component, App, Function, Area
+  const COLLECTIONS = ['Component', 'App', 'Function', 'Area']
 
   async function loadEntities(collection: string) {
     const r = await apiGet(`/v1/${collection}`, token)
@@ -86,8 +132,8 @@ export default function Tree({ onSelect, token: propToken }: TreeProps) {
 
   useEffect(() => {
     if (token) {
-      // Pre-load App collection as it is open by default
-      loadEntities('App')
+      // Pre-load Component collection as it is open by default
+      loadEntities('Component')
     }
   }, [token])
 
@@ -138,25 +184,24 @@ export default function Tree({ onSelect, token: propToken }: TreeProps) {
 
                     {isExpanded && (
                       <div className="ml-6 border-l border-gray-200 pl-1">
-                        {RESOURCES.map(res => (
-                          <div key={res} className="flex items-center py-1 group hover:bg-gray-50">
+                        {RESOURCE_MAP[col]?.map(resource => (
+                          <div key={resource.name} className="flex items-center py-1 group hover:bg-gray-50">
                             <span className="text-gray-500 mr-2">›</span>
-                            <span className="text-gray-600">{res}</span>
+                            <span className="text-gray-600">{resource.name}</span>
                             <div className="ml-auto opacity-0 group-hover:opacity-100 flex gap-1 mr-2">
-                              <button
-                                className="text-[10px] bg-green-100 text-green-800 px-1 rounded"
-                                onClick={() => handleSelect(`/v1/${col}/${entityId}/${res}`, 'GET')}
-                              >
-                                GET
-                              </button>
-                              {['data', 'faults', 'operations', 'locks'].includes(res) && (
+                              {resource.methods.map(method => (
                                 <button
-                                  className="text-[10px] bg-blue-100 text-blue-800 px-1 rounded"
-                                  onClick={() => handleSelect(`/v1/${col}/${entityId}/${res}`, 'POST')}
+                                  key={method}
+                                  className={`text-[10px] px-1 rounded ${method === 'GET' ? 'bg-green-100 text-green-800' :
+                                    method === 'POST' ? 'bg-blue-100 text-blue-800' :
+                                      method === 'DELETE' ? 'bg-red-100 text-red-800' :
+                                        'bg-gray-100 text-gray-800'
+                                    }`}
+                                  onClick={() => handleSelect(`/v1/${col}/${entityId}/${resource.name}`, method)}
                                 >
-                                  POST
+                                  {method}
                                 </button>
-                              )}
+                              ))}
                             </div>
                           </div>
                         ))}
