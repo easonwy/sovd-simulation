@@ -261,80 +261,86 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
   )
 
   return (
-    <div className="flex flex-col h-full bg-white rounded shadow-sm border border-gray-200">
+    <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       {/* Top Bar: URL & Method */}
-      <div className="p-3 border-b bg-gray-50/50 flex gap-3 items-center">
-        {/* Navigation Icons (Visual) */}
-        <div className="flex gap-2 text-gray-400">
-          <button className="hover:text-gray-600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></button>
-          <button className="hover:text-gray-600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
-          <button className="hover:text-gray-600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button>
-        </div>
-
-        {/* Method & URL */}
-        <div className="flex-1 flex shadow-sm rounded border border-gray-300 overflow-hidden h-9">
-          <div className="bg-white border-r border-gray-200 relative">
+      <div className="p-4 border-b border-slate-100 bg-white flex gap-4 items-center">
+        {/* Method & URL Input Group */}
+        <div className="flex-1 flex shadow-sm rounded-lg border border-slate-200 overflow-hidden h-10 transition-shadow focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300">
+          <div className="bg-slate-50 border-r border-slate-200 relative flex items-center min-w-[100px]">
             <select
               value={method}
               onChange={e => setMethod(e.target.value as any)}
-              className="appearance-none h-full pl-3 pr-8 bg-transparent font-bold text-sm text-gray-700 outline-none cursor-pointer"
+              className={`appearance-none h-full w-full pl-4 pr-8 bg-transparent font-bold text-sm outline-none cursor-pointer ${method === 'GET' ? 'text-green-600' :
+                  method === 'POST' ? 'text-blue-600' :
+                    method === 'PUT' ? 'text-orange-600' :
+                      'text-red-600'
+                }`}
             >
-              <option className="text-green-600">GET</option>
-              <option className="text-blue-600">POST</option>
-              <option className="text-orange-600">PUT</option>
-              <option className="text-red-600">DELETE</option>
+              <option className="text-gray-900">GET</option>
+              <option className="text-gray-900">POST</option>
+              <option className="text-gray-900">PUT</option>
+              <option className="text-gray-900">DELETE</option>
             </select>
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">▼</div>
+            <div className="absolute right-3 pointer-events-none text-slate-400 text-[10px]">▼</div>
           </div>
           <input
             value={path}
             onChange={e => setPath(e.target.value)}
-            className="flex-1 px-3 py-1 font-mono text-sm outline-none text-gray-700"
+            className="flex-1 px-4 py-2 font-mono text-sm outline-none text-slate-700 placeholder-slate-400 bg-white"
+            placeholder="/v1/..."
           />
         </div>
 
         <button
           onClick={send}
           disabled={loading}
-          className="px-6 h-9 bg-[#3B82F6] text-white font-medium rounded shadow-sm hover:bg-blue-600 disabled:opacity-50 text-sm"
+          className="px-6 h-10 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium rounded-lg shadow-sm shadow-blue-200 hover:from-blue-500 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-all active:scale-95 flex items-center gap-2"
         >
-          {loading ? 'Sending...' : 'Send'}
+          {loading ? (
+            <>
+              <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Sending...
+            </>
+          ) : (
+            <>
+              <span>Send Request</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+            </>
+          )}
         </button>
       </div>
 
-      {/* Request Tabs & Content */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="border-b px-2 flex gap-1 text-sm bg-white">
-          <button
-            className={`px-4 py-2 border-b-2 font-medium transition-colors ${activeTab === 'params' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
-            onClick={() => setActiveTab('params')}
-          >
-            Parameters
-          </button>
-          <button
-            className={`px-4 py-2 border-b-2 font-medium transition-colors ${activeTab === 'headers' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
-            onClick={() => setActiveTab('headers')}
-          >
-            Headers
-          </button>
-          <button
-            className={`px-4 py-2 border-b-2 font-medium transition-colors ${activeTab === 'body' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
-            onClick={() => setActiveTab('body')}
-          >
-            Body
-          </button>
+        {/* Request Tabs */}
+        <div className="border-b border-slate-100 flex px-4 gap-6 text-sm bg-white">
+          {(['params', 'headers', 'body'] as const).map((tab) => (
+            <button
+              key={tab}
+              className={`py-3 border-b-2 font-medium transition-all ${activeTab === tab
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'
+                }`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === 'params' && queryParams.filter(p => p.key).length > 0 && <span className="ml-2 text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">{queryParams.filter(p => p.key).length}</span>}
+              {tab === 'headers' && headers.filter(h => h.key).length > 0 && <span className="ml-2 text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">{headers.filter(h => h.key).length}</span>}
+            </button>
+          ))}
         </div>
 
-        <div className="p-0 overflow-y-auto h-[40%] border-b bg-gray-50/30">
-          <div className="p-4">
-            {activeTab === 'params' && renderKeyValueTable(queryParams, updateQueryParam)}
-            {activeTab === 'headers' && renderKeyValueTable(headers, updateHeader)}
+        {/* Request Panel Content */}
+        <div className="flex-1 overflow-y-auto bg-slate-50 p-4 border-b border-slate-200 min-h-[30%]">
+          <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden min-h-[200px]">
+            {activeTab === 'params' && renderKeyValueTable(queryParams, updateQueryParam, 'Parameter Key', 'Value')}
+            {activeTab === 'headers' && renderKeyValueTable(headers, updateHeader, 'Header Name', 'Value')}
             {activeTab === 'body' && (
               <textarea
                 value={reqBody}
                 onChange={e => setReqBody(e.target.value)}
-                className="w-full h-full min-h-[150px] border border-gray-300 rounded p-3 font-mono text-sm focus:border-blue-500 outline-none"
-                placeholder="{}"
+                className="w-full h-full min-h-[200px] p-4 font-mono text-xs leading-relaxed text-slate-700 focus:outline-none resize-none"
+                placeholder="{ JSON body }"
               />
             )}
           </div>
@@ -342,49 +348,71 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
 
         {/* Response Section */}
         {resp && (
-          <div className="flex-1 flex flex-col min-h-0 bg-white">
+          <div className="flex-1 flex flex-col min-h-0 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10">
             {/* Status Bar */}
-            <div className="px-4 py-2 bg-gray-50 border-b flex items-center gap-6 text-sm">
-              <span className="font-medium text-gray-500">Response</span>
-              <span className={`${resp.status >= 400 ? 'text-red-600' : 'text-green-600'} font-medium`}>
-                Status: {resp.status} {resp.statusText}
-              </span>
-              <span className="text-gray-500">Duration: <span className="text-gray-800">{resp.duration}ms</span></span>
-              <span className="text-gray-500">Size: <span className="text-gray-800">{resp.size} B</span></span>
-            </div>
+            <div className="px-4 py-3 bg-white border-b border-slate-100 flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${resp.status >= 200 && resp.status < 300 ? 'bg-green-100 text-green-700' :
+                    resp.status >= 300 && resp.status < 400 ? 'bg-blue-100 text-blue-700' :
+                      resp.status >= 400 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                  }`}>
+                  {resp.status} {resp.statusText}
+                </span>
+                <span className="text-slate-400 mx-1">|</span>
+                <div className="flex gap-4 text-xs text-slate-500 font-mono">
+                  <span>{resp.duration}ms</span>
+                  <span>{resp.size} B</span>
+                </div>
+              </div>
 
-            {/* Response Tabs */}
-            <div className="border-b px-2 flex gap-1 text-sm bg-white">
-              <button
-                className={`px-4 py-2 border-b-2 font-medium transition-colors ${responseTab === 'body' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
-                onClick={() => setResponseTab('body')}
-              >
-                Body
-              </button>
-              <button
-                className={`px-4 py-2 border-b-2 font-medium transition-colors ${responseTab === 'headers' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
-                onClick={() => setResponseTab('headers')}
-              >
-                Headers
-              </button>
+              {/* Response Tabs */}
+              <div className="flex bg-slate-100 p-0.5 rounded-lg">
+                {(['body', 'headers'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setResponseTab(tab)}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${responseTab === tab
+                        ? 'bg-white text-slate-800 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Response Content */}
-            <div className="relative flex-1 bg-white overflow-hidden flex flex-col">
+            <div className="relative flex-1 bg-white overflow-hidden flex flex-col group">
               {responseTab === 'headers' ? (
                 <div className="p-4 overflow-y-auto">
-                  <pre className="text-xs font-mono text-gray-700">{JSON.stringify(resp.headers, null, 2)}</pre>
+                  <div className="border border-slate-100 rounded-lg overflow-hidden">
+                    <table className="w-full text-xs text-left">
+                      <tbody className="divide-y divide-slate-100">
+                        {Object.entries(resp.headers).map(([k, v]) => (
+                          <tr key={k} className="hover:bg-slate-50/50">
+                            <td className="px-3 py-2 font-medium text-slate-600 bg-slate-50/30 w-1/3">{k}</td>
+                            <td className="px-3 py-2 font-mono text-slate-600 break-all">{v}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               ) : (
-                <div className="flex flex-col h-full">
-                  <div className="flex justify-end p-2 border-b bg-gray-50/50">
-                    <button onClick={copyToClipboard} title="Copy Body" className="p-1 hover:bg-gray-200 rounded text-gray-500">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <div className="flex flex-col h-full relative">
+                  <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={copyToClipboard}
+                      className="p-1.5 bg-white border border-slate-200 rounded-md shadow-sm hover:bg-slate-50 text-slate-500 transition-colors"
+                      title="Copy JSON"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                     </button>
                   </div>
 
-                  <div className="flex-1 overflow-auto p-4">
-                    <pre className="text-xs font-mono whitespace-pre-wrap text-gray-800 leading-relaxed font-medium">
+                  <div className="flex-1 overflow-auto p-4 custom-scrollbar">
+                    <pre className="text-xs font-mono whitespace-pre-wrap text-slate-700 leading-relaxed">
                       {typeof resp.body === 'string' ? resp.body : JSON.stringify(resp.body, null, 2)}
                     </pre>
                   </div>
