@@ -1,47 +1,45 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Tree from './_components/Tree'
 import RequestConsole from './_components/RequestConsole'
 
 export default function Page() {
+  const router = useRouter()
   const [selectedPath, setSelectedPath] = useState('/v1/Component')
   const [selectedMethod, setSelectedMethod] = useState('GET')
-  const [showAuth, setShowAuth] = useState(false)
-  const [role, setRole] = useState<'Viewer' | 'Developer' | 'Admin'>('Developer')
   const [token, setToken] = useState<string>('')
+  const [userEmail, setUserEmail] = useState<string>('')
+  const [userRole, setUserRole] = useState<string>('')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Check if user is logged in
     const t = localStorage.getItem('sovd.token')
-    if (t) {
-      setToken(t)
-    } else {
-      // Auto-issue token if none exists so the explorer works immediately
-      issueToken()
+    if (!t) {
+      // No token, redirect to login
+      router.push('/login')
+      return
     }
-  }, [])
 
-  async function issueToken() {
     try {
-      const res = await fetch('/v1/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grant_type: 'client_credentials', role })
-      })
-      const json = await res.json()
-      if (json.access_token) {
-        localStorage.setItem('sovd.token', json.access_token)
-        setToken(json.access_token)
-        setShowAuth(false)
-      }
-    } catch (e) {
-      console.error(e)
+      // Decode JWT to get user info
+      const payload = JSON.parse(atob(t.split('.')[1]))
+      setToken(t)
+      setUserEmail(payload.email || '')
+      setUserRole(payload.role || '')
+      setLoading(false)
+    } catch (error) {
+      // Invalid token, redirect to login
+      console.error('Invalid token:', error)
+      localStorage.removeItem('sovd.token')
+      router.push('/login')
     }
-  }
+  }, [router])
 
-  function disconnect() {
+  function handleLogout() {
     localStorage.removeItem('sovd.token')
-    setToken('')
-    setShowAuth(false)
+    router.push('/login')
   }
 
   function handleSelect(path: string, method: string) {
@@ -49,63 +47,45 @@ export default function Page() {
     setSelectedMethod(method)
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-screen bg-gray-100 overflow-hidden relative">
-      {/* Auth Modal */}
-      {showAuth && (
-        <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
-            <h3 className="text-lg font-bold mb-4">Connection Settings</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <select
-                  value={role}
-                  onChange={e => setRole(e.target.value as any)}
-                  className="w-full px-3 py-2 border rounded"
-                >
-                  <option>Viewer</option>
-                  <option>Developer</option>
-                  <option>Admin</option>
-                </select>
-              </div>
-              <button
-                onClick={issueToken}
-                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 font-medium"
-              >
-                Generate & Save Token
-              </button>
-              {token && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Current Token</label>
-                  <div className="text-xs font-mono bg-gray-100 p-2 rounded break-all h-20 overflow-y-auto mb-2">
-                    {token}
-                  </div>
-                  <button
-                    onClick={disconnect}
-                    className="w-full text-red-600 hover:bg-red-50 py-2 rounded font-medium border border-red-200"
-                  >
-                    Disconnect / Clear Token
-                  </button>
-                </div>
-              )}
-              <div className="flex justify-end pt-2">
-                <button onClick={() => setShowAuth(false)} className="text-sm text-gray-500 hover:text-gray-700">Close</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Header Bar */}
       <div className="h-12 bg-gray-900 flex items-center px-4 justify-between shrink-0">
         <div className="flex items-center gap-4">
           <span className="text-white font-bold text-lg tracking-tight">SOVD Explorer</span>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-gray-400">•</span>
+            <span className="text-gray-300">{userEmail}</span>
+            <span className={`px-2 py-0.5 rounded text-xs ${userRole === 'Admin' ? 'bg-red-600 text-white' :
+                userRole === 'Developer' ? 'bg-blue-600 text-white' :
+                  'bg-gray-600 text-white'
+              }`}>
+              {userRole}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {userRole === 'Admin' && (
+            <a
+              href="/admin"
+              className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+            >
+              Admin Panel
+            </a>
+          )}
           <button
-            onClick={() => setShowAuth(true)}
-            className={`${token ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'} text-white text-xs px-2 py-0.5 rounded cursor-pointer transition-colors`}
+            onClick={handleLogout}
+            className="text-xs px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
           >
-            Connection: {token ? 'Connected' : 'Disconnected'}
+            Logout
           </button>
         </div>
       </div>
@@ -135,9 +115,9 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Footer / Status Bar if needed */}
+      {/* Footer / Status Bar */}
       <div className="h-6 bg-gray-200 border-t text-xs flex items-center px-2 text-gray-600 shrink-0">
-        Trace
+        <span>Ready</span>
       </div>
     </div>
   )

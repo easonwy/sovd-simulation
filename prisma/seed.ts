@@ -19,19 +19,19 @@ async function main() {
   await prisma.sOVDEntity.deleteMany({})
   await prisma.user.deleteMany({})
 
-  // Create users
+  // Create users (matching login page demo credentials)
   const adminUser = await prisma.user.create({
     data: {
-      email: 'admin@sovd.local',
-      password: 'admin123',
+      email: 'admin@sovd.com',
+      password: 'admin123',  // TODO: Hash with bcrypt in production
       role: 'Admin'
     }
   })
 
   const devUser = await prisma.user.create({
     data: {
-      email: 'developer@sovd.local',
-      password: 'dev123',
+      email: 'dev@sovd.com',
+      password: 'dev123',  // TODO: Hash with bcrypt in production
       role: 'Developer'
     }
   })
