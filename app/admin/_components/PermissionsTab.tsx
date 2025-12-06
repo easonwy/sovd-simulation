@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import PermissionModal from './PermissionModal'
 import { showToast } from './ToastContainer'
 
@@ -13,11 +14,20 @@ interface Permission {
 }
 
 export default function PermissionsTab() {
+    const searchParams = useSearchParams()
     const [permissions, setPermissions] = useState<Permission[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedRole, setSelectedRole] = useState('Admin')
     const [showModal, setShowModal] = useState(false)
     const [editingPermission, setEditingPermission] = useState<Permission | null>(null)
+
+    // Read role from URL parameter
+    useEffect(() => {
+        const roleParam = searchParams.get('role')
+        if (roleParam && ['Admin', 'Developer', 'Viewer'].includes(roleParam)) {
+            setSelectedRole(roleParam)
+        }
+    }, [searchParams])
 
     useEffect(() => {
         loadPermissions()
@@ -150,17 +160,17 @@ export default function PermissionsTab() {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <span className={`px-2 py-1 text-xs font-medium rounded ${permission.method === 'GET' ? 'bg-green-100 text-green-800' :
-                                            permission.method === 'POST' ? 'bg-blue-100 text-blue-800' :
-                                                permission.method === 'DELETE' ? 'bg-red-100 text-red-800' :
-                                                    'bg-gray-100 text-gray-800'
+                                        permission.method === 'POST' ? 'bg-blue-100 text-blue-800' :
+                                            permission.method === 'DELETE' ? 'bg-red-100 text-red-800' :
+                                                'bg-gray-100 text-gray-800'
                                         }`}>
                                         {permission.method}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <span className={`px-2 py-1 text-xs font-medium rounded ${parseAccess(permission.access) === 'Allow'
-                                            ? 'bg-green-100 text-green-800'
-                                            : 'bg-red-100 text-red-800'
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-red-100 text-red-800'
                                         }`}>
                                         {parseAccess(permission.access)}
                                     </span>

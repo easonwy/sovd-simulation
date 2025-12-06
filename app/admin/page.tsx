@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import UsersTab from './_components/UsersTab'
 import RolesTab from './_components/RolesTab'
 import PermissionsTab from './_components/PermissionsTab'
@@ -8,6 +9,7 @@ import ToastContainer from './_components/ToastContainer'
 type Tab = 'users' | 'roles' | 'permissions'
 
 export default function AdminPage() {
+    const searchParams = useSearchParams()
     const [activeTab, setActiveTab] = useState<Tab>('users')
     const [userRole, setUserRole] = useState<string>('')
     const [loading, setLoading] = useState(true)
@@ -40,6 +42,22 @@ export default function AdminPage() {
 
         checkAdminAccess()
     }, [])
+
+    // Handle URL parameters for tab switching
+    useEffect(() => {
+        const tab = searchParams.get('tab')
+        if (tab && (tab === 'users' || tab === 'roles' || tab === 'permissions')) {
+            setActiveTab(tab as Tab)
+        }
+    }, [searchParams])
+
+    function handleTabChange(tab: Tab) {
+        setActiveTab(tab)
+        // Update URL without page reload
+        const url = new URL(window.location.href)
+        url.searchParams.set('tab', tab)
+        window.history.pushState({}, '', url.toString())
+    }
 
     if (loading) {
         return (
@@ -76,28 +94,28 @@ export default function AdminPage() {
                     {/* Tabs */}
                     <div className="flex space-x-1">
                         <button
-                            onClick={() => setActiveTab('users')}
+                            onClick={() => handleTabChange('users')}
                             className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === 'users'
-                                ? 'border-blue-500 text-blue-600'
-                                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                                    ? 'border-blue-500 text-blue-600'
+                                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                                 }`}
                         >
                             Users
                         </button>
                         <button
-                            onClick={() => setActiveTab('roles')}
+                            onClick={() => handleTabChange('roles')}
                             className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === 'roles'
-                                ? 'border-blue-500 text-blue-600'
-                                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                                    ? 'border-blue-500 text-blue-600'
+                                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                                 }`}
                         >
                             Roles
                         </button>
                         <button
-                            onClick={() => setActiveTab('permissions')}
+                            onClick={() => handleTabChange('permissions')}
                             className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === 'permissions'
-                                ? 'border-blue-500 text-blue-600'
-                                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                                    ? 'border-blue-500 text-blue-600'
+                                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                                 }`}
                         >
                             Permissions
