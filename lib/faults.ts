@@ -23,11 +23,22 @@ export interface FaultData {
  */
 export async function listFaults(entityId: string, filters?: FaultFilters) {
   try {
+    // First, resolve the entity by its friendly entityId to get the internal ID
+    const entity = await prisma.sOVDEntity.findFirst({
+      where: { entityId },
+      select: { id: true }
+    })
+
+    if (!entity) {
+      console.warn(`Entity not found with entityId: ${entityId}`)
+      return []
+    }
+
     const skip = filters?.offset || 0
     const take = filters?.limit || 100
 
-    // Build where clause with status filtering
-    const whereClause: any = { entityId }
+    // Build where clause with status filtering, using the internal entity ID
+    const whereClause: any = { entityId: entity.id }
 
     if (filters?.status) {
       whereClause.status = filters.status
@@ -58,11 +69,22 @@ export async function listFaults(entityId: string, filters?: FaultFilters) {
  */
 export async function readFault(entityId: string, code: string) {
   try {
+    // Resolve entity by friendly entityId
+    const entity = await prisma.sOVDEntity.findFirst({
+      where: { entityId },
+      select: { id: true }
+    })
+
+    if (!entity) {
+      console.warn(`Entity not found with entityId: ${entityId}`)
+      return null
+    }
+
     const fault = await prisma.fault.findUnique({
       where: {
         entityId_code: {
           code,
-          entityId
+          entityId: entity.id
         }
       }
     })
@@ -194,8 +216,19 @@ export async function clearFault(entityId: string, code: string) {
  */
 export async function clearAllFaults(entityId: string) {
   try {
+    // Resolve entity by friendly entityId
+    const entity = await prisma.sOVDEntity.findFirst({
+      where: { entityId },
+      select: { id: true }
+    })
+
+    if (!entity) {
+      console.warn(`Entity not found with entityId: ${entityId}`)
+      return { cleared: 0 }
+    }
+
     const result = await prisma.fault.updateMany({
-      where: { entityId, status: { not: 'resolved' } },
+      where: { entityId: entity.id, status: { not: 'resolved' } },
       data: {
         status: 'resolved',
         updatedAt: new Date()
@@ -206,7 +239,7 @@ export async function clearAllFaults(entityId: string) {
     if (result.count > 0) {
       await prisma.logEntry.create({
         data: {
-          entityId,
+          entityId: entity.id,
           severity: 'info',
           message: `${result.count} faults cleared`,
           category: 'fault',
@@ -266,21 +299,35 @@ export async function getFaultsByStatusKey(
   values: string | string[]
 ) {
   try {
+    // Resolve entity by friendly entityId
+    const entity = await prisma.sOVDEntity.findFirst({
+      where: { entityId },
+      select: { id: true }
+    })
+
+    if (!entity) {
+      console.warn(`Entity not found with entityId: ${entityId}`)
+      return []
+    }
+
     const valueArray = Array.isArray(values) ? values : [values]
 
     // Query faults and filter by status[key]
     const allFaults = await prisma.fault.findMany({
-      where: { entityId },
+      where: { entityId: entity.id },
       orderBy: { createdAt: 'desc' }
     })
 
     // Filter faults where metadata.status[key] matches any value (OR logic)
     const filtered = allFaults.filter(fault => {
-      const faultMetadata = fault.metadata as Record<string, any>
-      const status = faultMetadata?.status || {}
-      const faultStatusKey = status[statusKey]
-
-      return valueArray.includes(String(faultStatusKey))
+      try {
+        const metadata = typeof fault.metadata === 'string' ? JSON.parse(fault.metadata) : fault.metadata
+        const status = metadata?.status || {}
+        const faultStatusKey = status[statusKey]
+        return valueArray.includes(String(faultStatusKey))
+      } catch {
+        return false
+      }
     })
 
     return filtered.map(formatFault)
