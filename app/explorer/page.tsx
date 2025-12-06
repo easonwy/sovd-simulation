@@ -38,6 +38,12 @@ export default function Page() {
     }
   }
 
+  function disconnect() {
+    localStorage.removeItem('sovd.token')
+    setToken('')
+    setShowAuth(false)
+  }
+
   function handleSelect(path: string, method: string) {
     setSelectedPath(path)
     setSelectedMethod(method)
@@ -72,9 +78,15 @@ export default function Page() {
               {token && (
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Current Token</label>
-                  <div className="text-xs font-mono bg-gray-100 p-2 rounded break-all h-20 overflow-y-auto">
+                  <div className="text-xs font-mono bg-gray-100 p-2 rounded break-all h-20 overflow-y-auto mb-2">
                     {token}
                   </div>
+                  <button
+                    onClick={disconnect}
+                    className="w-full text-red-600 hover:bg-red-50 py-2 rounded font-medium border border-red-200"
+                  >
+                    Disconnect / Clear Token
+                  </button>
                 </div>
               )}
               <div className="flex justify-end pt-2">
@@ -91,9 +103,9 @@ export default function Page() {
           <span className="text-white font-bold text-lg tracking-tight">SOVD Explorer</span>
           <button
             onClick={() => setShowAuth(true)}
-            className="bg-green-600 hover:bg-green-500 text-white text-xs px-2 py-0.5 rounded cursor-pointer transition-colors"
+            className={`${token ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'} text-white text-xs px-2 py-0.5 rounded cursor-pointer transition-colors`}
           >
-            Connection: {token ? 'Connected' : 'No Token'}
+            Connection: {token ? 'Connected' : 'Disconnected'}
           </button>
         </div>
         <div className="flex gap-4 text-gray-400 text-sm font-medium">

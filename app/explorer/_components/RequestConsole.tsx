@@ -1,8 +1,5 @@
 "use client"
 import { useEffect, useState } from 'react'
-import { DataChart } from './DataChart'
-import { FaultsTable } from './FaultsTable'
-import { LogsTable } from './LogsTable'
 
 interface RequestConsoleProps {
   initialPath?: string
@@ -23,7 +20,7 @@ type ResponseTab = 'body' | 'headers'
 
 export default function RequestConsole({ initialPath, initialMethod, token: propToken }: RequestConsoleProps) {
   const internalToken = useToken()
-  const token = propToken || internalToken
+  const token = typeof propToken !== 'undefined' ? propToken : internalToken
 
   const [path, setPath] = useState(initialPath || '/v1/App/WindowControl/data')
   // Sync prop changes to state
@@ -64,7 +61,6 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
   } | null>(null)
   const [loading, setLoading] = useState(false)
   const [responseTab, setResponseTab] = useState<ResponseTab>('body')
-  const [displayMode, setDisplayMode] = useState<'json' | 'data' | 'faults' | 'logs' | 'chart'>('json')
 
   // Derive final URL
   const getUrl = () => {
@@ -73,14 +69,14 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
       if (p.key) params.append(p.key, p.value)
     })
     const paramString = params.toString()
-    return paramString ? `${path}?${paramString} ` : path
+    return paramString ? `${path}?${paramString}` : path
   }
 
   async function send() {
     setLoading(true)
     const startTime = performance.now()
     try {
-      const headerObj: Record<string, string> = { Authorization: `Bearer ${token} ` }
+      const headerObj: Record<string, string> = { Authorization: `Bearer ${token}` }
       headers.forEach(h => {
         if (h.key) headerObj[h.key] = h.value
       })
@@ -110,19 +106,6 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
         duration: Math.round(endTime - startTime),
         size
       })
-
-      // Auto-detect view
-      if (typeof parsedBody !== 'string') {
-        const anyBody = parsedBody as any
-        if (path.includes('/faults')) setDisplayMode('faults')
-        else if (path.includes('/logs')) setDisplayMode('logs')
-        else if (path.includes('/history')) setDisplayMode('chart')
-        else if (path.includes('/data') && anyBody?.items) setDisplayMode('data')
-        else setDisplayMode('json')
-      } else {
-        setDisplayMode('json')
-      }
-
     } catch (e) {
       console.error(e)
     } finally {
@@ -205,10 +188,6 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
     </div>
   )
 
-  const entityId = path.match(/\/v1\/(\w+)\/(\w+)/)?.[2] || ''
-  const collection = path.match(/\/v1\/(\w+)/)?.[1] || ''
-  const dataId = path.match(/\/data\/(\w+)/)?.[1] || ''
-
   return (
     <div className="flex flex-col h-full bg-white rounded shadow-sm border border-gray-200">
       {/* Top Bar: URL & Method */}
@@ -255,19 +234,19 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
       <div className="flex-1 flex flex-col min-h-0">
         <div className="border-b px-2 flex gap-1 text-sm bg-white">
           <button
-            className={`px - 4 py - 2 border - b - 2 font - medium transition - colors ${activeTab === 'params' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-gray-500 hover:text-gray-900'} `}
+            className={`px-4 py-2 border-b-2 font-medium transition-colors ${activeTab === 'params' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
             onClick={() => setActiveTab('params')}
           >
             Parameters
           </button>
           <button
-            className={`px - 4 py - 2 border - b - 2 font - medium transition - colors ${activeTab === 'headers' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-gray-500 hover:text-gray-900'} `}
+            className={`px-4 py-2 border-b-2 font-medium transition-colors ${activeTab === 'headers' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
             onClick={() => setActiveTab('headers')}
           >
             Headers
           </button>
           <button
-            className={`px - 4 py - 2 border - b - 2 font - medium transition - colors ${activeTab === 'body' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-gray-500 hover:text-gray-900'} `}
+            className={`px-4 py-2 border-b-2 font-medium transition-colors ${activeTab === 'body' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
             onClick={() => setActiveTab('body')}
           >
             Body
@@ -295,7 +274,7 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
             {/* Status Bar */}
             <div className="px-4 py-2 bg-gray-50 border-b flex items-center gap-6 text-sm">
               <span className="font-medium text-gray-500">Response</span>
-              <span className={`${resp.status >= 400 ? 'text-red-600' : 'text-green-600'} font - medium`}>
+              <span className={`${resp.status >= 400 ? 'text-red-600' : 'text-green-600'} font-medium`}>
                 Status: {resp.status} {resp.statusText}
               </span>
               <span className="text-gray-500">Duration: <span className="text-gray-800">{resp.duration}ms</span></span>
@@ -305,13 +284,13 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
             {/* Response Tabs */}
             <div className="border-b px-2 flex gap-1 text-sm bg-white">
               <button
-                className={`px - 4 py - 2 border - b - 2 font - medium transition - colors ${responseTab === 'body' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-gray-500 hover:text-gray-900'} `}
+                className={`px-4 py-2 border-b-2 font-medium transition-colors ${responseTab === 'body' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
                 onClick={() => setResponseTab('body')}
               >
                 Body
               </button>
               <button
-                className={`px - 4 py - 2 border - b - 2 font - medium transition - colors ${responseTab === 'headers' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-gray-500 hover:text-gray-900'} `}
+                className={`px-4 py-2 border-b-2 font-medium transition-colors ${responseTab === 'headers' ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
                 onClick={() => setResponseTab('headers')}
               >
                 Headers
@@ -326,53 +305,23 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
                 </div>
               ) : (
                 <div className="flex flex-col h-full">
-                  {/* View Mode Selector for Body */}
-                  <div className="flex gap-2 p-2 border-b bg-gray-50/50">
-                    {['json', 'data', 'faults', 'logs', 'chart'].map(m => (
-                      <button
-                        key={m}
-                        onClick={() => setDisplayMode(m as any)}
-                        className={`px - 3 py - 1 text - xs font - medium rounded - full border ${displayMode === m ? 'bg-blue-100 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'} `}
-                      >
-                        {m.toUpperCase()}
-                      </button>
-                    ))}
-                    <div className="ml-auto">
-                      <button onClick={copyToClipboard} title="Copy Body" className="p-1 hover:bg-gray-200 rounded text-gray-500">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                      </button>
-                    </div>
+                  <div className="flex justify-end p-2 border-b bg-gray-50/50">
+                    <button onClick={copyToClipboard} title="Copy Body" className="p-1 hover:bg-gray-200 rounded text-gray-500">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    </button>
                   </div>
 
                   <div className="flex-1 overflow-auto p-4">
-                    {displayMode === 'json' && (
-                      <pre className="text-xs font-mono whitespace-pre-wrap text-gray-800 leading-relaxed font-medium">
-                        {typeof resp.body === 'string' ? resp.body : JSON.stringify(resp.body, null, 2)}
-                      </pre>
-                    )}
-                    {displayMode === 'data' && (
-                      <div className="text-sm">Data Table UI will appear here for data responses.</div>
-                    )}
-                    {displayMode === 'chart' && (
-                      <DataChart entityId={`${collection} /${entityId}`} dataId={dataId} />
-                    )}
-                    {
-                      displayMode === 'faults' && resp.body?.items && (
-                        <FaultsTable entityId={entityId} faults={resp.body.items} />
-                      )
-                    }
-                    {
-                      displayMode === 'logs' && resp.body?.items && (
-                        <LogsTable entityId={entityId} logs={resp.body.items} />
-                      )
-                    }
-                  </div >
-                </div >
+                    <pre className="text-xs font-mono whitespace-pre-wrap text-gray-800 leading-relaxed font-medium">
+                      {typeof resp.body === 'string' ? resp.body : JSON.stringify(resp.body, null, 2)}
+                    </pre>
+                  </div>
+                </div>
               )}
-            </div >
-          </div >
+            </div>
+          </div>
         )}
-      </div >
-    </div >
+      </div>
+    </div>
   )
 }

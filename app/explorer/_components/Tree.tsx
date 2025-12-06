@@ -41,7 +41,7 @@ const RESOURCES = [
 
 export default function Tree({ onSelect, token: propToken }: TreeProps) {
   const internalToken = useToken()
-  const token = propToken || internalToken
+  const token = typeof propToken !== 'undefined' ? propToken : internalToken
   // Expanded states
   const [expandedCollections, setExpandedCollections] = useState<Set<string>>(new Set(['App']))
   const [expandedEntities, setExpandedEntities] = useState<Set<string>>(new Set())
