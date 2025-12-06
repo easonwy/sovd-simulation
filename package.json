@@ -8,17 +8,23 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "generate:types": "openapi-typescript docs/api-specs/sovd-api.yaml -o src/generated/sovd.d.ts",
-    "test:api": "node scripts/api-smoke.mjs"
+    "test:api": "node scripts/api-smoke.mjs",
+    "db:push": "prisma db push",
+    "db:migrate:dev": "prisma migrate dev --name",
+    "db:studio": "prisma studio",
+    "db:seed": "node prisma/seed.js"
   },
   "dependencies": {
     "next": "^14.2.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "jose": "^5.2.2"
+    "jose": "^5.2.2",
+    "@prisma/client": "^5.8.0"
   },
   "devDependencies": {
     "typescript": "^5.5.3",
     "@types/node": "^20.11.19",
-    "openapi-typescript": "^6.7.3"
+    "openapi-typescript": "^6.7.3",
+    "prisma": "^5.8.0"
   }
 }

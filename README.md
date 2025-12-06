@@ -40,7 +40,7 @@ SOVD 的 URI 路径结构具有严格的层次关系：`/{components|apps}/{iden
 **SOVD 查询参数与 Header：**
 
 - **`include-schema` (GET):** 请求响应中包含数据的 JSON Schema 元信息（描述数据类型、单位、范围等）。
-- **`status[timestamp]` (GET):** 请求指定时间戳的历史状态。
+- **`status[key]` (GET, 仅 /faults):** 按故障状态属性过滤，支持多值 OR 组合。支持的键由实体的能力描述定义。
 
 ## 3. 系统架构与统一技术栈
 

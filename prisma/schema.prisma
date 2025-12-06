@@ -1,0 +1,193 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  role      String     @default("Viewer") // Viewer | Developer | Admin
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  
+  @@map("users")
+}
+
+// SOVD Entity (Component, App, Area, Function)
+model SOVDEntity {
+  id         String   @id @default(cuid())
+  entityId   String   // e.g., "WindowControl"
+  collection String   // Area | Component | App | Function
+  name       String
+  metadata   String? // JSON metadata
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  dataValues      DataValue[]
+  faults          Fault[]
+  locks           Lock[]
+  logEntries      LogEntry[]
+  operations      Operation[]
+  modes           Mode[]
+  configurations  Configuration[]
+
+  @@unique([entityId, collection])
+  @@map("sovd_entities")
+}
+
+// Data value storage
+model DataValue {
+  id        String   @id @default(cuid())
+  entityId  String
+  entity    SOVDEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  dataId    String     // e.g., "DriverWindow"
+  value     String     // JSON-serialized value
+  category  String?    // e.g., "currentData", "identData"
+  groups    String?    // JSON-serialized array of group strings
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([entityId, dataId])
+  @@map("data_values")
+}
+
+// Fault storage
+model Fault {
+  id        String   @id @default(cuid())
+  entityId  String
+  entity    SOVDEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  code      String     // e.g., "DTC-001"
+  status    String     // "active" | "confirmed"
+  severity  String?    // Optional severity level
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([entityId, code])
+  @@map("faults")
+}
+
+// Lock storage
+model Lock {
+  id        String   @id @default(cuid())
+  entityId  String
+  entity    SOVDEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+
+  @@map("locks")
+}
+
+// Log entry storage
+model LogEntry {
+  id        String   @id @default(cuid())
+  entityId  String
+  entity    SOVDEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  timestamp String     // RFC3339 timestamp
+  context   String?    // JSON context (type, host, process, pid)
+  severity  String     // info, warning, error, etc.
+  msg       String     // Log message
+  createdAt DateTime   @default(now())
+
+  @@map("log_entries")
+}
+
+// Operation storage
+model Operation {
+  id        String   @id @default(cuid())
+  entityId  String
+  entity    SOVDEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  operationId String  // e.g., "restart"
+  name      String
+  metadata  String?  // JSON metadata
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  executions OperationExecution[]
+
+  @@unique([entityId, operationId])
+  @@map("operations")
+}
+
+// Operation execution records
+model OperationExecution {
+  id          String   @id @default(cuid())
+  operationId String
+  operation   Operation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  status      String     // "running" | "completed" | "failed"
+  result      String?    // JSON result data
+  error       String?    // Error message if failed
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("operation_executions")
+}
+
+// Mode storage
+model Mode {
+  id        String   @id @default(cuid())
+  entityId  String
+  entity    SOVDEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  modeId    String     // e.g., "test-mode"
+  name      String
+  metadata  String?    // JSON metadata
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([entityId, modeId])
+  @@map("modes")
+}
+
+// Configuration storage
+model Configuration {
+  id        String   @id @default(cuid())
+  entityId  String
+  entity    SOVDEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  configId  String     // Configuration identifier
+  name      String
+  type      String     // "bulk" | "parameter"
+  value     String?    // JSON configuration value
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([entityId, configId])
+  @@map("configurations")
+}
+
+// Permission/RBAC configuration
+model Permission {
+  id        String   @id @default(cuid())
+  role      String     // Viewer | Developer | Admin
+  pathPattern String   // e.g., "/v1/App/*/data/*"
+  method    String     // GET | POST | PUT | DELETE
+  canRead   Boolean    @default(false)
+  canWrite  Boolean    @default(false)
+  canDelete Boolean    @default(false)
+  createdAt DateTime   @default(now())
+
+  @@unique([role, pathPattern, method])
+  @@map("permissions")
+}
+
+// Update package tracking
+model UpdatePackage {
+  id        String   @id @default(cuid())
+  updateId  String     // Update package identifier
+  name      String
+  version   String?
+  origin    String?    // Origin information
+  automated Boolean    @default(false)
+  status    String     // "pending" | "preparing" | "executing" | "completed" | "failed"
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([updateId])
+  @@map("update_packages")
+}

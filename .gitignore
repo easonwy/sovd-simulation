@@ -18,6 +18,11 @@ out/
 .env.local
 .env.*.local
 
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal
+.prisma/
+
 # Vite (legacy - no longer used)
 dist-ssr/
 

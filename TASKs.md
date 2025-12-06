@@ -23,7 +23,7 @@
 - [x] Use server base `/v1` from spec
 - [x] Support `EntityCollection` enum: `Area|Component|App|Function`
 - [x] Honor `include-schema` query in responses
-- [ ] Remove/clarify non-spec params (e.g., `status[timestamp]`)
+- [x] Remove/clarify non-spec params (e.g., `status[timestamp]`)
 - [x] Use `{data-list-id}` naming consistently
  - [x] Add `/api/sim/*` → `/v1/*` rewrite for dev
 
@@ -87,7 +87,7 @@
 ## Simulator State
 - [x] In-memory fixtures for entities and values (Phase 1)
 - [x] Abstract storage layer for data, faults, logs
-- [ ] Add Prisma + SQLite (Phase 3), optional MySQL migration
+- [x] Add Prisma + SQLite (Phase 3), optional MySQL migration
 
 ## Explorer UI
 - [x] SOVD tree driven by discovery endpoints
