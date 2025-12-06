@@ -96,8 +96,7 @@ async function main() {
       entityId: windowControlApp.id,
       dataId: 'DriverWindow',
       value: JSON.stringify({ Position: 100 }),
-      category: 'currentData',
-      groups: JSON.stringify(['front'])
+      category: 'currentData'
     }
   })
 
@@ -106,8 +105,7 @@ async function main() {
       entityId: windowControlApp.id,
       dataId: 'PassengerWindow',
       value: JSON.stringify({ Position: 100 }),
-      category: 'currentData',
-      groups: JSON.stringify(['front'])
+      category: 'currentData'
     }
   })
 
@@ -116,8 +114,7 @@ async function main() {
       entityId: windowControlApp.id,
       dataId: 'RearWindows',
       value: JSON.stringify({ PositionLeft: 100, PositionRight: 0 }),
-      category: 'currentData',
-      groups: JSON.stringify(['rear'])
+      category: 'currentData'
     }
   })
 
@@ -151,6 +148,8 @@ async function main() {
   // Create an Operation Execution
   await prisma.operationExecution.create({
     data: {
+      executionId: 'exec-001',
+      entityId: drivingComponent.id,
       operationId: restartOp.id,
       status: 'completed',
       result: JSON.stringify({ message: 'Component restarted successfully' })
@@ -176,29 +175,29 @@ async function main() {
   // Create Permissions for RBAC
   const permissions = [
     // Viewer permissions - read only
-    { role: 'Viewer', pathPattern: '/v1/*/*', method: 'GET', canRead: true },
-    { role: 'Viewer', pathPattern: '/v1/*/*/data', method: 'GET', canRead: true },
-    { role: 'Viewer', pathPattern: '/v1/*/*/data/*', method: 'GET', canRead: true },
-    { role: 'Viewer', pathPattern: '/v1/*/*/faults', method: 'GET', canRead: true },
+    { role: 'Viewer', pathPattern: '/v1/*/*', method: 'GET', access: JSON.stringify({ allowed: true }) },
+    { role: 'Viewer', pathPattern: '/v1/*/*/data', method: 'GET', access: JSON.stringify({ allowed: true }) },
+    { role: 'Viewer', pathPattern: '/v1/*/*/data/*', method: 'GET', access: JSON.stringify({ allowed: true }) },
+    { role: 'Viewer', pathPattern: '/v1/*/*/faults', method: 'GET', access: JSON.stringify({ allowed: true }) },
 
     // Developer permissions - read/write operations
-    { role: 'Developer', pathPattern: '/v1/*/*', method: 'GET', canRead: true },
-    { role: 'Developer', pathPattern: '/v1/*/*/data', method: 'GET', canRead: true },
-    { role: 'Developer', pathPattern: '/v1/*/*/data/*', method: 'GET', canRead: true },
-    { role: 'Developer', pathPattern: '/v1/*/*/data/*', method: 'POST', canWrite: true },
-    { role: 'Developer', pathPattern: '/v1/*/*/faults', method: 'GET', canRead: true },
-    { role: 'Developer', pathPattern: '/v1/*/*/faults/*', method: 'POST', canWrite: true },
-    { role: 'Developer', pathPattern: '/v1/*/*/faults/*', method: 'DELETE', canDelete: true },
-    { role: 'Developer', pathPattern: '/v1/*/*/operations/*', method: 'POST', canWrite: true },
+    { role: 'Developer', pathPattern: '/v1/*/*', method: 'GET', access: JSON.stringify({ allowed: true }) },
+    { role: 'Developer', pathPattern: '/v1/*/*/data', method: 'GET', access: JSON.stringify({ allowed: true }) },
+    { role: 'Developer', pathPattern: '/v1/*/*/data/*', method: 'GET', access: JSON.stringify({ allowed: true }) },
+    { role: 'Developer', pathPattern: '/v1/*/*/data/*', method: 'POST', access: JSON.stringify({ allowed: true }) },
+    { role: 'Developer', pathPattern: '/v1/*/*/faults', method: 'GET', access: JSON.stringify({ allowed: true }) },
+    { role: 'Developer', pathPattern: '/v1/*/*/faults/*', method: 'POST', access: JSON.stringify({ allowed: true }) },
+    { role: 'Developer', pathPattern: '/v1/*/*/faults/*', method: 'DELETE', access: JSON.stringify({ allowed: true }) },
+    { role: 'Developer', pathPattern: '/v1/*/*/operations/*', method: 'POST', access: JSON.stringify({ allowed: true }) },
 
     // Admin permissions - full access
-    { role: 'Admin', pathPattern: '/v1/*/*', method: 'GET', canRead: true },
-    { role: 'Admin', pathPattern: '/v1/*/*', method: 'POST', canWrite: true },
-    { role: 'Admin', pathPattern: '/v1/*/*', method: 'PUT', canWrite: true },
-    { role: 'Admin', pathPattern: '/v1/*/*', method: 'DELETE', canDelete: true },
-    { role: 'Admin', pathPattern: '/admin/*', method: 'GET', canRead: true },
-    { role: 'Admin', pathPattern: '/admin/*', method: 'POST', canWrite: true },
-    { role: 'Admin', pathPattern: '/admin/*', method: 'DELETE', canDelete: true }
+    { role: 'Admin', pathPattern: '/v1/*/*', method: 'GET', access: JSON.stringify({ allowed: true }) },
+    { role: 'Admin', pathPattern: '/v1/*/*', method: 'POST', access: JSON.stringify({ allowed: true }) },
+    { role: 'Admin', pathPattern: '/v1/*/*', method: 'PUT', access: JSON.stringify({ allowed: true }) },
+    { role: 'Admin', pathPattern: '/v1/*/*', method: 'DELETE', access: JSON.stringify({ allowed: true }) },
+    { role: 'Admin', pathPattern: '/admin/*', method: 'GET', access: JSON.stringify({ allowed: true }) },
+    { role: 'Admin', pathPattern: '/admin/*', method: 'POST', access: JSON.stringify({ allowed: true }) },
+    { role: 'Admin', pathPattern: '/admin/*', method: 'DELETE', access: JSON.stringify({ allowed: true }) }
   ]
 
   for (const perm of permissions) {

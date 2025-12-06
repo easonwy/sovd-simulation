@@ -28,7 +28,12 @@ model SOVDEntity {
   entityId   String   // e.g., "WindowControl"
   collection String   // Area | Component | App | Function
   name       String
-  metadata   String? // JSON metadata
+  type       String?  // Entity type
+  category   String?  // Optional category
+  description String? // Optional description
+  status     String   @default("active") // active | inactive | archived
+  metadata   String?  // JSON metadata
+
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -41,6 +46,8 @@ model SOVDEntity {
   configurations  Configuration[]
 
   @@unique([entityId, collection])
+  @@index([collection])
+  @@index([collection, createdAt])
   @@map("sovd_entities")
 }
 
@@ -51,12 +58,18 @@ model DataValue {
   entity    SOVDEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
   dataId    String     // e.g., "DriverWindow"
   value     String     // JSON-serialized value
+  type      String     @default("dynamic") // dynamic | static | computed
+  unit      String?    // Optional unit (e.g., "°C", "km/h")
   category  String?    // e.g., "currentData", "identData"
-  groups    String?    // JSON-serialized array of group strings
+  status    String     @default("active") // active | inactive | error
   createdAt DateTime   @default(now())
+  timestamp DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
   @@unique([entityId, dataId])
+  @@index([category])
+  @@index([dataId])
+  @@index([entityId, dataId])
   @@map("data_values")
 }
 
@@ -66,12 +79,18 @@ model Fault {
   entityId  String
   entity    SOVDEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
   code      String     // e.g., "DTC-001"
-  status    String     // "active" | "confirmed"
-  severity  String?    // Optional severity level
+  title     String?    // Human-readable fault title
+  description String?  // Detailed description
+  status    String     @default("active") // "active" | "confirmed" | "resolved"
+  severity  String     @default("high") // critical | high | medium | low
+  metadata  String?    // JSON metadata with status fields
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
   @@unique([entityId, code])
+  @@index([status])
+  @@index([entityId, status])
+  @@index([createdAt])
   @@map("faults")
 }
 
@@ -90,27 +109,34 @@ model LogEntry {
   id        String   @id @default(cuid())
   entityId  String
   entity    SOVDEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  timestamp String     // RFC3339 timestamp
-  context   String?    // JSON context (type, host, process, pid)
-  severity  String     // info, warning, error, etc.
-  msg       String     // Log message
+  severity  String     @default("info") // info | warning | error | critical
+  message   String
+  category  String?    // e.g., "fault", "operation", "data"
+  metadata  String?    // JSON metadata
+  timestamp DateTime   @default(now())
   createdAt DateTime   @default(now())
 
+  @@index([severity])
+  @@index([entityId, timestamp])
   @@map("log_entries")
 }
 
 // Operation storage
 model Operation {
-  id        String   @id @default(cuid())
-  entityId  String
-  entity    SOVDEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  operationId String  // e.g., "restart"
-  name      String
-  metadata  String?  // JSON metadata
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id              String   @id @default(cuid())
+  entityId        String
+  entity          SOVDEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  operationId     String  // e.g., "restart"
+  name            String
+  description     String?
+  parameters      String?  // JSON schema for operation parameters
+  expectedOutput  String?  // Expected output schema
+  status          String  @default("available") // available | unavailable | deprecated
+  metadata        String?  // JSON metadata
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  executions OperationExecution[]
+  executions      OperationExecution[]
 
   @@unique([entityId, operationId])
   @@map("operations")
@@ -118,15 +144,21 @@ model Operation {
 
 // Operation execution records
 model OperationExecution {
-  id          String   @id @default(cuid())
-  operationId String
-  operation   Operation @relation(fields: [operationId], references: [id], onDelete: Cascade)
-  status      String     // "running" | "completed" | "failed"
-  result      String?    // JSON result data
-  error       String?    // Error message if failed
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id              String   @id @default(cuid())
+  executionId     String   @unique // Unique execution identifier
+  operationId     String
+  entityId        String   // Denormalized for easier querying
+  operation       Operation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  parameters      String?   // Input parameters
+  status          String   @default("in-progress") // in-progress | completed | failed
+  result          String?   // JSON result data
+  error           String?  // Error message if failed
+  timestamp       DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
+  @@index([status])
+  @@index([operationId, timestamp])
   @@map("operation_executions")
 }
 
@@ -163,17 +195,46 @@ model Configuration {
 
 // Permission/RBAC configuration
 model Permission {
-  id        String   @id @default(cuid())
-  role      String     // Viewer | Developer | Admin
+  id          String   @id @default(cuid())
+  role        String     // Viewer | Developer | Admin
   pathPattern String   // e.g., "/v1/App/*/data/*"
-  method    String     // GET | POST | PUT | DELETE
-  canRead   Boolean    @default(false)
-  canWrite  Boolean    @default(false)
-  canDelete Boolean    @default(false)
-  createdAt DateTime   @default(now())
+  method      String     // GET | POST | PUT | DELETE
+  access      String     // { allowed: boolean, reason?: string }
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@unique([role, pathPattern, method])
+  @@index([role])
   @@map("permissions")
+}
+
+// Data snapshot for time-series visualization
+model DataSnapshot {
+  id        String   @id @default(cuid())
+  dataId    String
+  entityId  String
+  value     String     // JSON-serialized value
+  timestamp DateTime   @default(now())
+
+  @@index([dataId, timestamp])
+  @@index([entityId, timestamp])
+  @@map("data_snapshots")
+}
+
+// Audit log for compliance and monitoring
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String   // User ID or system
+  action    String   // CREATE | UPDATE | DELETE | READ | LOGIN | etc
+  resource  String   // Path, entity type, or resource identifier
+  result    String   // success | error
+  details   String?  // JSON details
+  timestamp DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@index([resource, timestamp])
+  @@index([action])
+  @@map("audit_logs")
 }
 
 // Update package tracking

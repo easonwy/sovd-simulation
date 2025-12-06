@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { listData } from '../../../../../lib/state'
+import { listDataValues } from '../../../../../lib/data'
 
 export const runtime = 'nodejs'
 
@@ -14,15 +14,34 @@ function parseIncludeSchema(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest, { params }: { params: { 'entity-collection': string; 'entity-id': string } }) {
-  const collection = params['entity-collection']
-  const entityId = params['entity-id']
-  if (!validCollection(collection)) {
-    return NextResponse.json({ error: 'invalid_entity_collection' }, { status: 400 })
+  try {
+    const collection = params['entity-collection']
+    const entityId = params['entity-id']
+    if (!validCollection(collection)) {
+      return NextResponse.json({ error: 'invalid_entity_collection' }, { status: 400 })
+    }
+
+    const dataValues = await listDataValues(entityId)
+    const includeSchema = parseIncludeSchema(req)
+
+    const resp = {
+      items: dataValues.map((dv: typeof dataValues[0]) => ({
+        id: dv.id,
+        value: dv.value,
+        category: dv.category,
+        type: dv.type
+      }))
+    }
+
+    if (includeSchema) {
+      return NextResponse.json({ ...resp, schema: {} }, { status: 200 })
+    }
+    return NextResponse.json(resp, { status: 200 })
+  } catch (error) {
+    console.error('Failed to list data values:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    )
   }
-  const resp = listData(collection as any, entityId)
-  const includeSchema = parseIncludeSchema(req)
-  if (includeSchema) {
-    return NextResponse.json({ ...resp, schema: {} }, { status: 200 })
-  }
-  return NextResponse.json(resp, { status: 200 })
 }

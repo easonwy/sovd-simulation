@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { listEntities } from '../../../lib/state'
+import { listEntities } from '../../../lib/entities'
 
 export const runtime = 'nodejs'
 
@@ -14,15 +14,35 @@ function parseIncludeSchema(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest, { params }: { params: { 'entity-collection': string } }) {
-  const collection = params['entity-collection']
-  if (!validCollection(collection)) {
-    return NextResponse.json({ error: 'invalid_entity_collection' }, { status: 400 })
+  try {
+    const collection = params['entity-collection']
+    if (!validCollection(collection)) {
+      return NextResponse.json({ error: 'invalid_entity_collection' }, { status: 400 })
+    }
+
+    const entities = await listEntities(collection)
+    const includeSchema = parseIncludeSchema(req)
+
+    const response = {
+      items: entities.map((e: typeof entities[0]) => ({
+        id: e.entityId,
+        name: e.name,
+        type: e.type,
+        description: e.description,
+        collection: e.collection
+      }))
+    }
+
+    if (includeSchema) {
+      return NextResponse.json({ ...response, schema: {} }, { status: 200 })
+    }
+
+    return NextResponse.json(response, { status: 200 })
+  } catch (error) {
+    console.error('Failed to list entities:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    )
   }
-  const origin = req.nextUrl.origin
-  const resp = listEntities(collection as any, origin)
-  const includeSchema = parseIncludeSchema(req)
-  if (includeSchema) {
-    return NextResponse.json({ ...resp, schema: {} }, { status: 200 })
-  }
-  return NextResponse.json(resp, { status: 200 })
 }
