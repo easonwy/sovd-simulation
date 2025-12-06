@@ -49,7 +49,7 @@ async function main() {
   // ==================== COMPONENTS ====================
   const powertrainComp = await prisma.sOVDEntity.create({
     data: {
-      entityId: 'pcu',
+      entityId: 'powertrain-control-unit',
       collection: 'Component',
       name: 'Powertrain Control Unit',
       type: 'ECU',
@@ -64,7 +64,7 @@ async function main() {
 
   const adasComp = await prisma.sOVDEntity.create({
     data: {
-      entityId: 'am',
+      entityId: 'adas-module',
       collection: 'Component',
       name: 'ADAS Module',
       type: 'ECU',
@@ -79,7 +79,7 @@ async function main() {
 
   const infotainmentComp = await prisma.sOVDEntity.create({
     data: {
-      entityId: 'ihu',
+      entityId: 'infotainment-head-unit',
       collection: 'Component',
       name: 'Infotainment Head Unit',
       type: 'HMI',
@@ -94,7 +94,7 @@ async function main() {
 
   const bcmComp = await prisma.sOVDEntity.create({
     data: {
-      entityId: 'bcm',
+      entityId: 'body-control-module',
       collection: 'Component',
       name: 'Body Control Module',
       type: 'ECU',
@@ -111,7 +111,7 @@ async function main() {
   // ==================== APPS ====================
   const navigationApp = await prisma.sOVDEntity.create({
     data: {
-      entityId: 'na',
+      entityId: 'navigation-app',
       collection: 'App',
       name: 'Navigation System',
       type: 'Application',
@@ -126,7 +126,7 @@ async function main() {
 
   const climateApp = await prisma.sOVDEntity.create({
     data: {
-      entityId: 'cc',
+      entityId: 'climate-control',
       collection: 'App',
       name: 'Climate Control',
       type: 'Application',
@@ -140,7 +140,7 @@ async function main() {
 
   const driverAssistApp = await prisma.sOVDEntity.create({
     data: {
-      entityId: 'da',
+      entityId: 'driver-assistance',
       collection: 'App',
       name: 'Driver Assistance',
       type: 'Application',
@@ -154,7 +154,7 @@ async function main() {
 
   const mediaPlayerApp = await prisma.sOVDEntity.create({
     data: {
-      entityId: 'mp',
+      entityId: 'media-player',
       collection: 'App',
       name: 'Media Player',
       type: 'Application',
@@ -171,7 +171,7 @@ async function main() {
   // ==================== FUNCTIONS ====================
   const absFunction = await prisma.sOVDEntity.create({
     data: {
-      entityId: 'alb',
+      entityId: 'anti-lock-braking',
       collection: 'Function',
       name: 'Anti-lock Braking System',
       type: 'SafetyFunction',
@@ -185,7 +185,7 @@ async function main() {
 
   const cruiseFunction = await prisma.sOVDEntity.create({
     data: {
-      entityId: 'acc',
+      entityId: 'adaptive-cruise-control',
       collection: 'Function',
       name: 'Adaptive Cruise Control',
       type: 'ComfortFunction',
@@ -199,7 +199,7 @@ async function main() {
 
   const laneKeepFunction = await prisma.sOVDEntity.create({
     data: {
-      entityId: 'lka',
+      entityId: 'lane-keeping-assist',
       collection: 'Function',
       name: 'Lane Keeping Assist',
       type: 'SafetyFunction',
@@ -216,7 +216,7 @@ async function main() {
   // ==================== AREAS ====================
   const centralArea = await prisma.sOVDEntity.create({
     data: {
-      entityId: 'cg',
+      entityId: 'central-gateway',
       collection: 'Area',
       name: 'Central Gateway',
       type: 'NetworkZone',
@@ -230,7 +230,7 @@ async function main() {
 
   const frontLeftArea = await prisma.sOVDEntity.create({
     data: {
-      entityId: 'fl',
+      entityId: 'front-left',
       collection: 'Area',
       name: 'Front Left Zone',
       type: 'PhysicalZone',
@@ -300,6 +300,7 @@ async function main() {
   console.log('✅ Created Data Values (5)')
 
   // ==================== FAULTS ====================
+  // Powertrain Component Faults
   await prisma.fault.create({
     data: {
       entityId: powertrainComp.id,
@@ -312,11 +313,87 @@ async function main() {
         timestamp: '2025-12-06T12:45:23+08:00',
         responseCode: 200,
         responseMessage: 'Fault detected and logged',
-        stationInfo: 'ECU-PCU-01'
+        stationInfo: 'ECU-PCU-01',
+        mileage: 45230
       })
     }
   })
 
+  await prisma.fault.create({
+    data: {
+      entityId: powertrainComp.id,
+      code: 'P0128',
+      title: 'Coolant Thermostat Temperature Below Regulating Temperature',
+      description: 'Engine coolant is not reaching proper operating temperature',
+      status: 'active',
+      severity: 'minor',
+      metadata: JSON.stringify({
+        timestamp: '2025-12-06T10:22:15+08:00',
+        responseCode: 200,
+        responseMessage: 'Thermostat may be stuck open',
+        stationInfo: 'ECU-PCU-01',
+        actualTemp: 75,
+        expectedTemp: 92
+      })
+    }
+  })
+
+  await prisma.fault.create({
+    data: {
+      entityId: powertrainComp.id,
+      code: 'P0171',
+      title: 'System Too Lean (Bank 1)',
+      description: 'Fuel trim too lean detected on engine bank 1',
+      status: 'confirmed',
+      severity: 'major',
+      metadata: JSON.stringify({
+        timestamp: '2025-12-05T16:30:42+08:00',
+        responseCode: 200,
+        responseMessage: 'Check for vacuum leaks or fuel pressure',
+        stationInfo: 'ECU-PCU-01',
+        fuelTrim: 25.5
+      })
+    }
+  })
+
+  await prisma.fault.create({
+    data: {
+      entityId: powertrainComp.id,
+      code: 'P0420',
+      title: 'Catalyst System Efficiency Below Threshold (Bank 1)',
+      description: 'Catalytic converter efficiency is below acceptable level',
+      status: 'confirmed',
+      severity: 'major',
+      metadata: JSON.stringify({
+        timestamp: '2025-12-04T14:18:30+08:00',
+        responseCode: 200,
+        responseMessage: 'Catalyst replacement may be required',
+        stationInfo: 'ECU-PCU-01',
+        efficiency: 68
+      })
+    }
+  })
+
+  await prisma.fault.create({
+    data: {
+      entityId: powertrainComp.id,
+      code: 'P0562',
+      title: 'System Voltage Low',
+      description: 'Charging system voltage is below normal operating range',
+      status: 'active',
+      severity: 'critical',
+      metadata: JSON.stringify({
+        timestamp: '2025-12-06T13:10:05+08:00',
+        responseCode: 200,
+        responseMessage: 'Check alternator and battery',
+        stationInfo: 'ECU-PCU-01',
+        voltage: 11.2,
+        normalRange: '13.5-14.5V'
+      })
+    }
+  })
+
+  // ADAS Component Faults
   await prisma.fault.create({
     data: {
       entityId: adasComp.id,
@@ -329,11 +406,51 @@ async function main() {
         timestamp: '2025-12-06T11:20:15+08:00',
         responseCode: 200,
         responseMessage: 'Communication timeout',
-        stationInfo: 'ECU-ADAS-01'
+        stationInfo: 'ECU-ADAS-01',
+        canBus: 'CAN-FD',
+        lastMessage: '11:19:58'
       })
     }
   })
 
+  await prisma.fault.create({
+    data: {
+      entityId: adasComp.id,
+      code: 'C1234',
+      title: 'Front Radar Sensor Blocked',
+      description: 'Forward collision warning radar sensor obstruction detected',
+      status: 'active',
+      severity: 'major',
+      metadata: JSON.stringify({
+        timestamp: '2025-12-06T09:45:12+08:00',
+        responseCode: 200,
+        responseMessage: 'Clean sensor or check for physical damage',
+        stationInfo: 'ECU-ADAS-01',
+        sensorLocation: 'front-bumper-center'
+      })
+    }
+  })
+
+  await prisma.fault.create({
+    data: {
+      entityId: adasComp.id,
+      code: 'C1456',
+      title: 'Lane Keep Camera Alignment Error',
+      description: 'Lane keeping assist camera calibration out of specification',
+      status: 'confirmed',
+      severity: 'major',
+      metadata: JSON.stringify({
+        timestamp: '2025-12-05T11:30:20+08:00',
+        responseCode: 200,
+        responseMessage: 'Recalibration required',
+        stationInfo: 'ECU-ADAS-01',
+        alignmentOffset: 2.3,
+        threshold: 1.5
+      })
+    }
+  })
+
+  // BCM Faults
   await prisma.fault.create({
     data: {
       entityId: bcmComp.id,
@@ -346,12 +463,164 @@ async function main() {
         timestamp: '2025-12-06T10:05:42+08:00',
         responseCode: 200,
         responseMessage: 'Voltage below threshold',
-        stationInfo: 'BCM-01'
+        stationInfo: 'BCM-01',
+        voltage: 11.8,
+        threshold: 12.0
       })
     }
   })
 
-  console.log('✅ Created Faults (3)')
+  await prisma.fault.create({
+    data: {
+      entityId: bcmComp.id,
+      code: 'B1601',
+      title: 'Ignition Key In Warning',
+      description: 'Key detected in ignition with driver door open',
+      status: 'resolved',
+      severity: 'informational',
+      metadata: JSON.stringify({
+        timestamp: '2025-12-06T08:15:30+08:00',
+        responseCode: 200,
+        responseMessage: 'Driver removed key',
+        stationInfo: 'BCM-01',
+        doorStatus: 'open'
+      })
+    }
+  })
+
+  await prisma.fault.create({
+    data: {
+      entityId: bcmComp.id,
+      code: 'B2141',
+      title: 'Driver Door Ajar Signal Circuit Failure',
+      description: 'Door ajar sensor signal incorrect or intermittent',
+      status: 'active',
+      severity: 'minor',
+      metadata: JSON.stringify({
+        timestamp: '2025-12-05T18:42:10+08:00',
+        responseCode: 200,
+        responseMessage: 'Check door switch and wiring',
+        stationInfo: 'BCM-01',
+        affectedDoor: 'driver-front'
+      })
+    }
+  })
+
+  // Infotainment Component Faults
+  await prisma.fault.create({
+    data: {
+      entityId: infotainmentComp.id,
+      code: 'U0100',
+      title: 'Lost Communication With ECU/PCM',
+      description: 'Communication lost with powertrain control module',
+      status: 'active',
+      severity: 'major',
+      metadata: JSON.stringify({
+        timestamp: '2025-12-06T12:05:18+08:00',
+        responseCode: 200,
+        responseMessage: 'CAN bus communication error',
+        stationInfo: 'IHU-01',
+        targetModule: 'PCU'
+      })
+    }
+  })
+
+  await prisma.fault.create({
+    data: {
+      entityId: infotainmentComp.id,
+      code: 'U0140',
+      title: 'Lost Communication With Body Control Module',
+      description: 'Intermittent communication with BCM detected',
+      status: 'confirmed',
+      severity: 'major',
+      metadata: JSON.stringify({
+        timestamp: '2025-12-06T11:52:45+08:00',
+        responseCode: 200,
+        responseMessage: 'Check CAN bus integrity',
+        stationInfo: 'IHU-01',
+        targetModule: 'BCM',
+        packetLoss: 15.3
+      })
+    }
+  })
+
+  await prisma.fault.create({
+    data: {
+      entityId: infotainmentComp.id,
+      code: 'B1425',
+      title: 'GPS Antenna Circuit Open',
+      description: 'GPS antenna connection failure or antenna malfunction',
+      status: 'active',
+      severity: 'minor',
+      metadata: JSON.stringify({
+        timestamp: '2025-12-05T09:20:33+08:00',
+        responseCode: 200,
+        responseMessage: 'Check antenna cable and connections',
+        stationInfo: 'IHU-01',
+        signalStrength: 0
+      })
+    }
+  })
+
+  // Navigation App Faults
+  await prisma.fault.create({
+    data: {
+      entityId: navigationApp.id,
+      code: 'A0001',
+      title: 'Map Database Corruption',
+      description: 'Navigation map data integrity check failed',
+      status: 'active',
+      severity: 'major',
+      metadata: JSON.stringify({
+        timestamp: '2025-12-06T07:30:12+08:00',
+        responseCode: 500,
+        responseMessage: 'Map database update required',
+        stationInfo: 'NAV-APP-01',
+        corruptedRegions: ['SEA', 'EUR']
+      })
+    }
+  })
+
+  // Climate Control App Faults
+  await prisma.fault.create({
+    data: {
+      entityId: climateApp.id,
+      code: 'A0102',
+      title: 'Cabin Temperature Sensor Malfunction',
+      description: 'Invalid temperature reading from cabin sensor',
+      status: 'active',
+      severity: 'minor',
+      metadata: JSON.stringify({
+        timestamp: '2025-12-06T08:45:20+08:00',
+        responseCode: 200,
+        responseMessage: 'Sensor reading out of range',
+        stationInfo: 'HVAC-01',
+        sensorValue: -40,
+        validRange: '-20 to 60°C'
+      })
+    }
+  })
+
+  // Driver Assistance App Faults
+  await prisma.fault.create({
+    data: {
+      entityId: driverAssistApp.id,
+      code: 'A0203',
+      title: 'Adaptive Cruise Control Temporarily Unavailable',
+      description: 'ACC system disabled due to sensor fault',
+      status: 'active',
+      severity: 'major',
+      metadata: JSON.stringify({
+        timestamp: '2025-12-06T10:15:44+08:00',
+        responseCode: 503,
+        responseMessage: 'Radar sensor fault detected',
+        stationInfo: 'DA-APP-01',
+        relatedDTC: 'C1234'
+      })
+    }
+  })
+
+  console.log('✅ Created Faults (18)')
 
   // ==================== OPERATIONS ====================
   const resetDtcOp = await prisma.operation.create({
@@ -467,7 +736,7 @@ async function main() {
   console.log('  - Functions: 3 (ABS, ACC, Lane Keep)')
   console.log('  - Areas: 2 (Central Gateway, Front Left)')
   console.log('  - Data Values: 5')
-  console.log('  - Faults: 3 (P0301, U0126, B1318)')
+  console.log('  - Faults: 18 (P-codes, U-codes, B-codes, C-codes, A-codes)')
   console.log('  - Operations: 2')
   console.log('  - Log Entries: 3')
   console.log('  - Permissions: 12')
