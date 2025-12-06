@@ -108,10 +108,6 @@ export default function Page() {
             Connection: {token ? 'Connected' : 'Disconnected'}
           </button>
         </div>
-        <div className="flex gap-4 text-gray-400 text-sm font-medium">
-          <span className="text-white border-b-2 border-white cursor-pointer">Console</span>
-          <span className="hover:text-white cursor-pointer">Projects</span>
-        </div>
       </div>
 
       {/* Main Content */}
