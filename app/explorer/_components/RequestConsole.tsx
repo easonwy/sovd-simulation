@@ -144,11 +144,35 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
     return paramString ? `${path}?${paramString}` : path
   }
 
+  // Sync token to headers when available
+  useEffect(() => {
+    if (token) {
+      setHeaders(prev => {
+        // If Auth header exists, don't overwrite if it's different (user might have edited it)
+        // But for initial load or login refresh, we generally want to set it.
+        // Let's set it if it's missing or if the list is default.
+        const authIndex = prev.findIndex(h => h.key.toLowerCase() === 'authorization')
+
+        const newHeaders = [...prev]
+        if (authIndex >= 0) {
+          // If it exists, we update it ONLY if it looks like a system update (optional refinement)
+          // For now, let's update it to ensure fresh login works, 
+          // but user edits might be lost on re-render if token prop changes? 
+          // Actually token prop only changes on mount or re-login.
+          newHeaders[authIndex] = { key: 'Authorization', value: `Bearer ${token}` }
+        } else {
+          newHeaders.unshift({ key: 'Authorization', value: `Bearer ${token}` })
+        }
+        return newHeaders
+      })
+    }
+  }, [token])
+
   async function send() {
     setLoading(true)
     const startTime = performance.now()
     try {
-      const headerObj: Record<string, string> = { Authorization: `Bearer ${token}` }
+      const headerObj: Record<string, string> = {}
       headers.forEach(h => {
         if (h.key) headerObj[h.key] = h.value
       })
@@ -271,9 +295,9 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
               value={method}
               onChange={e => setMethod(e.target.value as any)}
               className={`appearance-none h-full w-full pl-4 pr-8 bg-transparent font-bold text-sm outline-none cursor-pointer ${method === 'GET' ? 'text-green-600' :
-                  method === 'POST' ? 'text-blue-600' :
-                    method === 'PUT' ? 'text-orange-600' :
-                      'text-red-600'
+                method === 'POST' ? 'text-blue-600' :
+                  method === 'PUT' ? 'text-orange-600' :
+                    'text-red-600'
                 }`}
             >
               <option className="text-gray-900">GET</option>
@@ -318,8 +342,8 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
             <button
               key={tab}
               className={`py-3 border-b-2 font-medium transition-all ${activeTab === tab
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'
                 }`}
               onClick={() => setActiveTab(tab)}
             >
@@ -336,12 +360,31 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
             {activeTab === 'params' && renderKeyValueTable(queryParams, updateQueryParam, 'Parameter Key', 'Value')}
             {activeTab === 'headers' && renderKeyValueTable(headers, updateHeader, 'Header Name', 'Value')}
             {activeTab === 'body' && (
-              <textarea
-                value={reqBody}
-                onChange={e => setReqBody(e.target.value)}
-                className="w-full h-full min-h-[200px] p-4 font-mono text-xs leading-relaxed text-slate-700 focus:outline-none resize-none"
-                placeholder="{ JSON body }"
-              />
+              <div className="relative w-full h-full min-h-[200px]">
+                <div className="absolute top-2 right-2 z-10">
+                  <button
+                    onClick={() => {
+                      try {
+                        const parsed = JSON.parse(reqBody)
+                        setReqBody(JSON.stringify(parsed, null, 2))
+                      } catch (e) {
+                        // could show a toast here if we had one accessible, or just shake
+                      }
+                    }}
+                    className="p-1.5 bg-white border border-slate-200 rounded-md shadow-sm hover:bg-slate-50 text-slate-500 transition-colors text-xs font-medium flex items-center gap-1"
+                    title="Format JSON"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    Format
+                  </button>
+                </div>
+                <textarea
+                  value={reqBody}
+                  onChange={e => setReqBody(e.target.value)}
+                  className="w-full h-full p-4 font-mono text-xs leading-relaxed text-slate-700 focus:outline-none resize-none"
+                  placeholder="{ JSON body }"
+                />
+              </div>
             )}
           </div>
         </div>
@@ -353,8 +396,8 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
             <div className="px-4 py-3 bg-white border-b border-slate-100 flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
                 <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${resp.status >= 200 && resp.status < 300 ? 'bg-green-100 text-green-700' :
-                    resp.status >= 300 && resp.status < 400 ? 'bg-blue-100 text-blue-700' :
-                      resp.status >= 400 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                  resp.status >= 300 && resp.status < 400 ? 'bg-blue-100 text-blue-700' :
+                    resp.status >= 400 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
                   }`}>
                   {resp.status} {resp.statusText}
                 </span>
@@ -372,8 +415,8 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
                     key={tab}
                     onClick={() => setResponseTab(tab)}
                     className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${responseTab === tab
-                        ? 'bg-white text-slate-800 shadow-sm'
-                        : 'text-slate-500 hover:text-slate-700'
+                      ? 'bg-white text-slate-800 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
                       }`}
                   >
                     {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -401,7 +444,21 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
                 </div>
               ) : (
                 <div className="flex flex-col h-full relative">
-                  <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                    <button
+                      onClick={() => {
+                        try {
+                          const bodyContent = typeof resp.body === 'string' ? resp.body : JSON.stringify(resp.body)
+                          const parsed = JSON.parse(bodyContent)
+                          // Check if it's currently showing pretty string
+                          // Actually the render below already handles stringify(null, 2)
+                          // So this button is redundant if the view is already pretty.
+                          // But forcing re-formatting might be what user wants if the raw string was ugly?
+                          // Actually the view logic below is better:
+                        } catch (e) { }
+                      }}
+                      className="hidden" // Placeholder logic
+                    />
                     <button
                       onClick={copyToClipboard}
                       className="p-1.5 bg-white border border-slate-200 rounded-md shadow-sm hover:bg-slate-50 text-slate-500 transition-colors"
@@ -413,7 +470,20 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
 
                   <div className="flex-1 overflow-auto p-4 custom-scrollbar">
                     <pre className="text-xs font-mono whitespace-pre-wrap text-slate-700 leading-relaxed">
-                      {typeof resp.body === 'string' ? resp.body : JSON.stringify(resp.body, null, 2)}
+                      {(() => {
+                        try {
+                          // If it's an object, it's already handled by 'else'.
+                          // If it's a string, try to parse it as JSON to pretty print it.
+                          if (typeof resp.body === 'string') {
+                            const parsed = JSON.parse(resp.body)
+                            return JSON.stringify(parsed, null, 2)
+                          }
+                          return JSON.stringify(resp.body, null, 2)
+                        } catch (e) {
+                          // If valid object, pretty print. If raw string (not json), return as is.
+                          return typeof resp.body === 'string' ? resp.body : JSON.stringify(resp.body, null, 2)
+                        }
+                      })()}
                     </pre>
                   </div>
                 </div>
