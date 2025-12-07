@@ -187,10 +187,17 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
       const ct = res.headers.get('content-type') || ''
       const text = await res.text()
       const size = new Blob([text]).size
-      let parsedBody = text
+      let parsedBody: any = text
       try {
         if (ct.includes('application/json')) {
           parsedBody = JSON.parse(text)
+        } else if (res.status === 404 && text.includes('<!DOCTYPE html>')) {
+          // Simplify Next.js default HTML 404 page
+          parsedBody = {
+            status: 404,
+            error: 'Not Found',
+            message: ' The requested API endpoint does not exist.'
+          }
         }
       } catch { }
 
