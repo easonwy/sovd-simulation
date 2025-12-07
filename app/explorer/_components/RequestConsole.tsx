@@ -251,11 +251,20 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
   }
 
   // Auto-send on mount or when token becomes available
+  // Auto-send on mount or when token/headers become available
   useEffect(() => {
+    // Ensure we don't send before the Authorization header is injected into the state
+    const hasAuth = headers.some(h => h.key.toLowerCase() === 'authorization' && h.value)
+    if (token && !hasAuth) return
+
     if (token && method === 'GET' && !resp && !loading) {
       send()
     }
-  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token, headers.length]) // check length to avoid loop on typing, or just depend on hasAuth concept?
+  // Actually, headers object reference changes on every edit. 
+  // But we only care about the *initial* injection which changes length or content.
+  // Ideally we just want to run this ONCE when ready.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   // Update a row. If editing the last row, add a new one.
   const updateQueryParam = (idx: number, k: keyof typeof queryParams[0], v: string) => {
