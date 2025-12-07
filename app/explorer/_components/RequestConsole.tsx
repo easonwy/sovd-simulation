@@ -84,6 +84,38 @@ function getResourceType(path: string): string {
   return match ? match[1] : 'default'
 }
 
+// Helper to syntax highlight JSON
+const syntaxHighlight = (json: string | object) => {
+  let jsonStr = ''
+  if (typeof json !== 'string') {
+    jsonStr = JSON.stringify(json, undefined, 2);
+  } else {
+    try {
+      const parsed = JSON.parse(json)
+      jsonStr = JSON.stringify(parsed, undefined, 2)
+    } catch {
+      return json // Return raw if invalid JSON
+    }
+  }
+
+  jsonStr = jsonStr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return jsonStr.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+    let cls = 'text-purple-600'; // number
+    if (/^"/.test(match)) {
+      if (/:$/.test(match)) {
+        cls = 'text-blue-600 font-semibold'; // key
+      } else {
+        cls = 'text-green-600'; // string
+      }
+    } else if (/true|false/.test(match)) {
+      cls = 'text-orange-600 font-bold'; // boolean
+    } else if (/null/.test(match)) {
+      cls = 'text-slate-400 italic'; // null
+    }
+    return '<span class="' + cls + '">' + match + '</span>';
+  });
+}
+
 export default function RequestConsole({ initialPath, initialMethod, token: propToken }: RequestConsoleProps) {
   const internalToken = useToken()
   const token = typeof propToken !== 'undefined' ? propToken : internalToken
@@ -121,6 +153,8 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
     { key: '', value: '' }
   ])
   const [reqBody, setReqBody] = useState('')
+
+  const [reqPreviewMode, setReqPreviewMode] = useState(false)
 
   // Response State
   const [resp, setResp] = useState<{
@@ -368,29 +402,58 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
             {activeTab === 'headers' && renderKeyValueTable(headers, updateHeader, 'Header Name', 'Value')}
             {activeTab === 'body' && (
               <div className="relative w-full h-full min-h-[200px]">
-                <div className="absolute top-2 right-2 z-10">
+                <div className="absolute top-2 right-2 z-10 flex gap-2">
                   <button
-                    onClick={() => {
-                      try {
-                        const parsed = JSON.parse(reqBody)
-                        setReqBody(JSON.stringify(parsed, null, 2))
-                      } catch (e) {
-                        // could show a toast here if we had one accessible, or just shake
-                      }
-                    }}
-                    className="p-1.5 bg-white border border-slate-200 rounded-md shadow-sm hover:bg-slate-50 text-slate-500 transition-colors text-xs font-medium flex items-center gap-1"
-                    title="Format JSON"
+                    onClick={() => setReqPreviewMode(!reqPreviewMode)}
+                    className={`p-1.5 border rounded-md shadow-sm transition-colors text-xs font-medium flex items-center gap-1 ${reqPreviewMode
+                      ? 'bg-blue-50 border-blue-200 text-blue-600'
+                      : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-500'
+                      }`}
+                    title={reqPreviewMode ? "Edit Mode" : "Preview Mode"}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-                    Format
+                    {reqPreviewMode ? (
+                      <>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        Edit
+                      </>
+                    ) : (
+                      <>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        Preview
+                      </>
+                    )}
                   </button>
+
+                  {!reqPreviewMode && (
+                    <button
+                      onClick={() => {
+                        try {
+                          const parsed = JSON.parse(reqBody)
+                          setReqBody(JSON.stringify(parsed, null, 2))
+                        } catch (e) { }
+                      }}
+                      className="p-1.5 bg-white border border-slate-200 rounded-md shadow-sm hover:bg-slate-50 text-slate-500 transition-colors text-xs font-medium flex items-center gap-1"
+                      title="Format JSON"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                      Format
+                    </button>
+                  )}
                 </div>
-                <textarea
-                  value={reqBody}
-                  onChange={e => setReqBody(e.target.value)}
-                  className="w-full h-full p-4 font-mono text-xs leading-relaxed text-slate-700 focus:outline-none resize-none"
-                  placeholder="{ JSON body }"
-                />
+
+                {reqPreviewMode ? (
+                  <pre
+                    className="w-full h-full p-4 font-mono text-xs leading-relaxed text-slate-700 overflow-auto whitespace-pre-wrap"
+                    dangerouslySetInnerHTML={{ __html: syntaxHighlight(reqBody) }}
+                  />
+                ) : (
+                  <textarea
+                    value={reqBody}
+                    onChange={e => setReqBody(e.target.value)}
+                    className="w-full h-full p-4 font-mono text-xs leading-relaxed text-slate-700 focus:outline-none resize-none"
+                    placeholder="{ JSON body }"
+                  />
+                )}
               </div>
             )}
           </div>
@@ -476,22 +539,10 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
                   </div>
 
                   <div className="flex-1 overflow-auto p-4 custom-scrollbar">
-                    <pre className="text-xs font-mono whitespace-pre-wrap text-slate-700 leading-relaxed">
-                      {(() => {
-                        try {
-                          // If it's an object, it's already handled by 'else'.
-                          // If it's a string, try to parse it as JSON to pretty print it.
-                          if (typeof resp.body === 'string') {
-                            const parsed = JSON.parse(resp.body)
-                            return JSON.stringify(parsed, null, 2)
-                          }
-                          return JSON.stringify(resp.body, null, 2)
-                        } catch (e) {
-                          // If valid object, pretty print. If raw string (not json), return as is.
-                          return typeof resp.body === 'string' ? resp.body : JSON.stringify(resp.body, null, 2)
-                        }
-                      })()}
-                    </pre>
+                    <pre
+                      className="text-xs font-mono whitespace-pre-wrap text-slate-700 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: syntaxHighlight(resp.body) }}
+                    />
                   </div>
                 </div>
               )}
