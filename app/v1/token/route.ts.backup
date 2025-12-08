@@ -22,25 +22,24 @@ function parseBody(contentType: string | null, raw: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    // HS256 signing requires no key preload
     const ct = req.headers.get('content-type')
     const raw = await req.text()
     const body = parseBody(ct, raw)
-
+    
     const role = (body.role || 'Viewer') as 'Viewer' | 'Developer' | 'Admin'
     const grant = body.grant_type || 'client_credentials'
     const expiresIn = body.expires_in || '1h'
-
+    
     if (!grant) {
       return NextResponse.json({ error: 'invalid_request' }, { status: 400 })
     }
 
-    // Get role permissions
+    // 获取角色权限
     const permissions = await getRolePermissions(role)
 
-    // Use enhanced JWT tool to generate token
+    // 使用增强的JWT工具生成Token
     const tokenResult = await generateEnhancedToken({
-      userId: 'system', // System generated token
+      userId: 'system', // 系统生成的Token
       email: 'system@sovd.local',
       role,
       oid: 'default',
@@ -70,33 +69,33 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * Get role permission list
+ * 获取角色权限列表
  */
 async function getRolePermissions(role: string): Promise<string[]> {
   try {
-    // Get role permissions from database
+    // 从数据库获取角色权限
     const rolePermissions = await prisma.permission.findMany({
       where: { role },
       select: { method: true, pathPattern: true }
     })
 
-    // Convert to permission string format
-    const permissions = rolePermissions.map(perm =>
+    // 转换为权限字符串格式
+    const permissions = rolePermissions.map(perm => 
       `${perm.method}:${perm.pathPattern}`
     )
 
-    // Add base permissions
+    // 添加基础权限
     const basePermissions = getBasePermissions(role)
-
+    
     return [...new Set([...basePermissions, ...permissions])]
   } catch (error) {
-    console.error('Failed to get role permissions:', error)
+    console.error('获取角色权限失败:', error)
     return getBasePermissions(role)
   }
 }
 
 /**
- * Get base permissions
+ * 获取基础权限
  */
 function getBasePermissions(role: string): string[] {
   const basePerms = {
@@ -116,7 +115,7 @@ function getBasePermissions(role: string): string[] {
       'DELETE:/v1/App/*/faults',
       'GET:/v1/App/*/lock'
     ],
-    'Admin': ['*'] // Admin has all permissions
+    'Admin': ['*'] // 管理员拥有所有权限
   }
 
   return basePerms[role as keyof typeof basePerms] || []

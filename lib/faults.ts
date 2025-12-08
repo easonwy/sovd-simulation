@@ -105,10 +105,20 @@ export async function readFault(entityId: string, code: string) {
  */
 export async function createFault(entityId: string, data: FaultData) {
   try {
+    // Resolve entity by friendly entityId
+    const entity = await prisma.sOVDEntity.findFirst({
+      where: { entityId },
+      select: { id: true }
+    })
+
+    if (!entity) {
+      throw new Error(`Entity not found with entityId: ${entityId}`)
+    }
+
     const fault = await prisma.fault.create({
       data: {
         code: data.code,
-        entityId,
+        entityId: entity.id,
         title: data.title || `Fault ${data.code}`,
         description: data.description || '',
         severity: data.severity || 'high',
@@ -142,11 +152,21 @@ export async function createFault(entityId: string, data: FaultData) {
  */
 export async function confirmFault(entityId: string, code: string) {
   try {
+    // Resolve entity by friendly entityId
+    const entity = await prisma.sOVDEntity.findFirst({
+      where: { entityId },
+      select: { id: true }
+    })
+
+    if (!entity) {
+      throw new Error(`Entity not found with entityId: ${entityId}`)
+    }
+
     const fault = await prisma.fault.update({
       where: {
         entityId_code: {
           code,
-          entityId
+          entityId: entity.id
         }
       },
       data: {
@@ -179,11 +199,21 @@ export async function confirmFault(entityId: string, code: string) {
  */
 export async function clearFault(entityId: string, code: string) {
   try {
+    // Resolve entity by friendly entityId
+    const entity = await prisma.sOVDEntity.findFirst({
+      where: { entityId },
+      select: { id: true }
+    })
+
+    if (!entity) {
+      throw new Error(`Entity not found with entityId: ${entityId}`)
+    }
+
     const fault = await prisma.fault.update({
       where: {
         entityId_code: {
           code,
-          entityId
+          entityId: entity.id
         }
       },
       data: {
@@ -261,11 +291,21 @@ export async function clearAllFaults(entityId: string) {
  */
 export async function deleteFault(entityId: string, code: string) {
   try {
+    // Resolve entity by friendly entityId
+    const entity = await prisma.sOVDEntity.findFirst({
+      where: { entityId },
+      select: { id: true }
+    })
+
+    if (!entity) {
+      throw new Error(`Entity not found with entityId: ${entityId}`)
+    }
+
     const fault = await prisma.fault.delete({
       where: {
         entityId_code: {
           code,
-          entityId
+          entityId: entity.id
         }
       }
     })

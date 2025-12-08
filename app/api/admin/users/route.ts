@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
@@ -64,12 +65,11 @@ export async function POST(req: NextRequest) {
             )
         }
 
-        // TODO: Hash password with bcrypt before storing
-        // For now, storing plain text (NOT SECURE - will fix in next step)
+        const hashed = await bcrypt.hash(password, 10)
         const user = await prisma.user.create({
             data: {
                 email,
-                password, // Should be hashed!
+                password: hashed,
                 role
             },
             select: {
