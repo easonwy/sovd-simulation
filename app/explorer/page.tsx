@@ -12,6 +12,7 @@ export default function Page() {
   const [userEmail, setUserEmail] = useState<string>('')
   const [userRole, setUserRole] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   useEffect(() => {
     // Check if user is logged in
@@ -99,22 +100,59 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex flex-1 min-h-0 bg-slate-50">
-        {/* Left Sidebar: Tree */}
-        <div className="w-80 bg-white border-r border-slate-200 flex flex-col shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] z-10">
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Resources</span>
-            <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">v1.0</span>
+      {/* Main Content - Optimized layout with collapsible sidebar */}
+      <div className="flex flex-1 min-h-0 bg-slate-50" style={{ height: 'calc(100vh - 5.25rem)' }}>
+        {/* Left Sidebar: Tree - Collapsible */}
+        <div className={`bg-white border-r border-slate-200 flex flex-col shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] z-10 transition-all duration-300 ${isSidebarCollapsed ? 'w-12' : 'w-72'}`}>
+          {/* Sidebar Header - More compact */}
+          <div className="p-3 border-b border-slate-100 flex items-center justify-between">
+            {!isSidebarCollapsed && (
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Resources</span>
+            )}
+            {!isSidebarCollapsed && (
+              <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">v1.0</span>
+            )}
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="p-1.5 hover:bg-slate-50 rounded-md transition-colors"
+              title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`text-slate-400 transition-transform ${isSidebarCollapsed ? "rotate-180" : ""}`}>
+                <path d="M15 18l-6-6 6-6"/>
+              </svg>
+            </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-slate-200">
-            <Tree onSelect={handleSelect} token={token} />
-          </div>
+          
+          {/* Tree Content - Only show when expanded */}
+          {!isSidebarCollapsed && (
+            <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+              <Tree onSelect={handleSelect} token={token} isCollapsed={isSidebarCollapsed} />
+            </div>
+          )}
+          
+          {/* Tree Content - Compact view when collapsed */}
+          {isSidebarCollapsed && (
+            <div className="flex-1 overflow-y-auto p-1 custom-scrollbar">
+              <Tree onSelect={handleSelect} token={token} isCollapsed={isSidebarCollapsed} />
+            </div>
+          )}
+          
+          {/* Collapsed state - Show minimal info */}
+          {isSidebarCollapsed && (
+            <div className="flex-1 flex flex-col items-center justify-start pt-4 gap-3">
+              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-violet-600 rounded flex items-center justify-center">
+                <span className="text-xs">🚗</span>
+              </div>
+              <div className="writing-mode-vertical text-xs text-slate-400 font-medium tracking-wider">
+                SOVD
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Right Content: Console */}
-        <div className="flex-1 flex flex-col min-w-0 bg-slate-50/50">
-          <div className="p-6 h-full">
+        {/* Right Content: Console - Maximized area with dynamic width */}
+        <div className="flex-1 flex flex-col min-w-0 bg-slate-50/50" style={{ height: '100%' }}>
+          <div className="p-4 h-full" style={{ height: '100%' }}>
             <RequestConsole
               key={`${selectedPath}-${selectedMethod}`}
               initialPath={selectedPath}

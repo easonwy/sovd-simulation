@@ -5,6 +5,7 @@ interface TreeProps {
   onSelect?: (path: string, method: string) => void
   token?: string
   lastResponse?: { path: string; data: any } | null
+  isCollapsed?: boolean
 }
 
 function useToken() {
@@ -85,7 +86,7 @@ const RESOURCE_MAP: Record<string, ResourceDef[]> = {
   ]
 }
 
-export default function Tree({ onSelect, token: propToken, lastResponse }: TreeProps) {
+export default function Tree({ onSelect, token: propToken, lastResponse, isCollapsed }: TreeProps) {
   const internalToken = useToken()
   const token = typeof propToken !== 'undefined' ? propToken : internalToken
   // Expanded states
@@ -209,21 +210,44 @@ export default function Tree({ onSelect, token: propToken, lastResponse }: TreeP
 
   return (
     <div className="font-sans text-sm overflow-hidden select-none pb-10">
-      {/* Collapse/Expand All Toggle */}
-      <div className="flex gap-2 mb-3 pb-3 border-b border-slate-100 px-2 sticky top-0 bg-white z-10">
-        <button
-          onClick={collapseAll}
-          className="text-[10px] font-medium px-2 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md text-slate-600 transition-colors flex-1"
-        >
-          Collapse All
-        </button>
-        <button
-          onClick={expandAll}
-          className="text-[10px] font-medium px-2 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md text-slate-600 transition-colors flex-1"
-        >
-          Expand All
-        </button>
-      </div>
+      {/* Collapse/Expand All Toggle - Hide when sidebar is collapsed */}
+      {!isCollapsed && (
+        <div className="flex gap-2 mb-3 pb-3 border-b border-slate-100 px-2 sticky top-0 bg-white z-10">
+          <button
+            onClick={collapseAll}
+            className="text-[10px] font-medium px-2 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md text-slate-600 transition-colors flex-1"
+          >
+            Collapse All
+          </button>
+          <button
+            onClick={expandAll}
+            className="text-[10px] font-medium px-2 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md text-slate-600 transition-colors flex-1"
+          >
+            Expand All
+          </button>
+        </div>
+      )}
+
+      {/* Compact view when collapsed */}
+      {isCollapsed && (
+        <div className="space-y-1">
+          {/* Full view when expanded */}
+      {!isCollapsed && COLLECTIONS.map(col => (
+            <div key={col} className="px-1">
+              <button
+                className="w-full text-left p-1.5 hover:bg-slate-50 rounded text-xs text-slate-600 font-medium transition-colors"
+                onClick={() => toggleCollection(col)}
+                title={col}
+              >
+                <div className="flex items-center gap-1">
+                  <span className={`transition-transform duration-200 ${expandedCollections.has(col) ? 'rotate-90' : ''}`}>▶</span>
+                  <span className="truncate">{col.slice(0, 3)}</span>
+                </div>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {COLLECTIONS.map(col => (
         <div key={col} className="mb-1">
@@ -366,4 +390,26 @@ export default function Tree({ onSelect, token: propToken, lastResponse }: TreeP
       ))}
     </div>
   )
+}
+
+// Add CSS for better collapsed state
+const style = `
+  .writing-mode-vertical {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+  
+  @media (max-width: 768px) {
+    .writing-mode-vertical {
+      writing-mode: horizontal-tb;
+      text-orientation: initial;
+    }
+  }
+`
+
+// Inject the style
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style')
+  styleElement.textContent = style
+  document.head.appendChild(styleElement)
 }

@@ -67,3 +67,227 @@ body {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* Custom Scrollbar Styles */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+/* Responsive scrollbar for better mobile experience */
+@media (max-width: 768px) {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #e2e8f0;
+  }
+}
+
+/* Writing mode for vertical text */
+.writing-mode-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+/* Enhanced transitions for smooth UI interactions */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.transition-transform {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Custom focus styles for better accessibility */
+.focus\:ring-2:focus {
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+}
+
+/* Improved text readability for code blocks */
+.font-mono {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Enhanced hover effects for interactive elements */
+.hover\:bg-slate-50:hover {
+  background-color: #f8fafc;
+}
+
+.hover\:bg-slate-50\/30:hover {
+  background-color: rgba(248, 250, 252, 0.3);
+}
+
+/* Better shadow effects for depth */
+.shadow-\[0_-4px_6px_-1px_rgba\(0\,0\,0\,0\.05\)\] {
+  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.shadow-\[4px_0_24px_-12px_rgba\(0\,0\,0\,0\.1\)\] {
+  box-shadow: 4px 0 24px -12px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure proper scrolling behavior */
+.overflow-auto {
+  overflow: auto;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
+}
+
+.overflow-x-auto {
+  overflow-x: auto;
+}
+
+/* Fix for WebKit browsers to ensure scrollbars appear */
+.custom-scrollbar::-webkit-scrollbar:vertical {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar:horizontal {
+  height: 6px;
+}
+
+/* Ensure pre elements scroll properly */
+pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Fix for flex containers to ensure proper scrolling */
+.flex-1 {
+  min-height: 0;
+  min-width: 0;
+}
+
+/* Ensure proper scrolling in response viewers */
+.response-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.response-content {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+/* Prevent text selection issues in response body */
+.response-body {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+/* Ensure response containers have proper height constraints */
+.response-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.response-container > * {
+  min-height: 0;
+}
+
+/* Ensure the enhanced response viewer takes full available height */
+.response-viewer {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+/* Fix for flexbox scrolling issues */
+.flex-col {
+  min-height: 0;
+}
+
+.flex-1 {
+  min-height: 0;
+  min-width: 0;
+}
+
+/* Specific fix for pre elements in response viewers - Only for formatted view */
+.response-content .formatted-view pre {
+  overflow: auto !important;
+  max-height: 100% !important;
+  height: 100% !important;
+  display: block !important;
+}
+
+/* Remove default overflow from pre elements to prevent conflicts */
+.response-content pre:not(.scrollable-content) {
+  overflow: visible;
+}
+
+/* Ensure proper scrolling in all response views */
+.response-viewer .overflow-auto {
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Fix for WebKit rendering issues */
+@supports (-webkit-appearance: none) {
+  .response-content {
+    transform: translateZ(0);
+  }
+}
+
+/* Debug styles for scrollbar issues */
+.debug-scrollbar {
+  outline: 1px solid red;
+  background-color: rgba(255, 0, 0, 0.1);
+}
+
+/* Force scrollbar visibility */
+.force-scrollbar {
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure maximum height utilization */
+.max-height-utilization {
+  height: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Fix for pre element scrolling */
+pre.scrollable-content {
+  display: block !important;
+  overflow: auto !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  max-height: 100% !important;
+}
