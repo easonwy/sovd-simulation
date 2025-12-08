@@ -291,3 +291,101 @@ pre.scrollable-content {
   word-wrap: break-word !important;
   max-height: 100% !important;
 }
+
+/* Token Manager specific styles */
+.token-manager-dialog {
+  backdrop-filter: blur(4px);
+}
+
+.token-manager-tabs {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.token-manager-tab {
+  position: relative;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.token-manager-tab:hover {
+  color: #374151;
+}
+
+.token-manager-tab.active {
+  color: #2563eb;
+}
+
+.token-manager-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #2563eb;
+}
+
+.token-input {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.token-payload-editor {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  tab-size: 2;
+}
+
+/* Syntax highlighting for token payload */
+.token-json-key {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.token-json-string {
+  color: #059669;
+}
+
+.token-json-number {
+  color: #7c3aed;
+}
+
+.token-json-boolean {
+  color: #ea580c;
+  font-weight: 700;
+}
+
+.token-json-null {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* Token status indicators */
+.token-status-valid {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.token-status-invalid {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+/* Responsive token manager */
+@media (max-width: 768px) {
+  .token-manager-dialog {
+    padding: 1rem;
+  }
+  
+  .token-manager-grid {
+    grid-template-columns: 1fr;
+  }
+}

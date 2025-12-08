@@ -6,6 +6,7 @@ interface RequestConsoleProps {
   initialPath?: string
   initialMethod?: string
   token?: string
+  onTokenManagerOpen?: () => void
 }
 
 function useToken() {
@@ -117,7 +118,7 @@ const syntaxHighlight = (json: string | object) => {
   });
 }
 
-export default function RequestConsole({ initialPath, initialMethod, token: propToken }: RequestConsoleProps) {
+export default function RequestConsole({ initialPath, initialMethod, token: propToken, onTokenManagerOpen }: RequestConsoleProps) {
   const internalToken = useToken()
   const token = typeof propToken !== 'undefined' ? propToken : internalToken
 
@@ -357,6 +358,21 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
             <path d="M15 18l-6-6 6-6"/>
           </svg>
         </button>
+
+        {/* Token Manager Button */}
+        {onTokenManagerOpen && (
+          <button
+            onClick={onTokenManagerOpen}
+            className="p-1.5 bg-purple-50 border border-purple-200 rounded-md hover:bg-purple-100 text-purple-600 transition-all"
+            title="Open Token Manager"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
+              <path d="M2 17L12 22L22 17"/>
+              <path d="M2 12L12 17L22 12"/>
+            </svg>
+          </button>
+        )}
 
         {/* Method & URL Input Group - More compact */}
         <div className="flex-1 flex shadow-sm rounded-lg border border-slate-200 overflow-hidden h-9 transition-shadow focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300">
