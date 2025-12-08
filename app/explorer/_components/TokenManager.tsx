@@ -169,6 +169,19 @@ export default function TokenManager({ isOpen, onClose, currentToken, onTokenUpd
         return
       }
 
+      // Determine expiry option from edited payload
+      const nowSec = Math.floor(Date.now() / 1000)
+      let expiresOption: string | number | undefined = undefined
+      if (typeof editedData.exp === 'number') {
+        // if (editedData.exp <= nowSec) {
+        //   alert('Expiration time (exp) must be in the future')
+        //   return
+        // }
+        expiresOption = editedData.exp - nowSec
+      } else if (typeof editedData.expiresIn === 'string') {
+        expiresOption = editedData.expiresIn
+      }
+
       // Generate new token with edited payload
       const result = await generateEnhancedToken({
         userId: editedData.userId,
@@ -178,7 +191,7 @@ export default function TokenManager({ isOpen, onClose, currentToken, onTokenUpd
         permissions: editedData.permissions,
         scope: editedData.scope,
         clientId: editedData.clientId
-      })
+      }, expiresOption ? { expiresIn: expiresOption } : undefined)
 
       setGeneratedToken(result.token)
       setSaveSuccess('Token updated successfully!')
@@ -427,16 +440,30 @@ export default function TokenManager({ isOpen, onClose, currentToken, onTokenUpd
           {/* Edit & Encrypt Tab */}
           {activeTab === 'edit' && (
             <div className="h-full flex flex-col space-y-4">
-              <div className="flex-1 flex flex-col space-y-4 min-h-0">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Edit Payload</label>
-                  <textarea
-                    value={editedPayload}
-                    onChange={(e) => setEditedPayload(e.target.value)}
-                    className="w-full h-64 p-3 border border-gray-300 rounded-md font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 custom-scrollbar"
-                    placeholder="Edit the token payload here..."
-                  />
-                </div>
+          <div className="flex-1 flex flex-col space-y-4 min-h-0">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Edit Payload</label>
+              <textarea
+                value={editedPayload}
+                onChange={(e) => setEditedPayload(e.target.value)}
+                className="w-full h-64 p-3 border border-gray-300 rounded-md font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 custom-scrollbar"
+                placeholder="Edit the token payload here..."
+              />
+              {(() => {
+                try {
+                  const data = JSON.parse(editedPayload || '{}')
+                  const exp = typeof data.exp === 'number' ? data.exp : null
+                  if (exp) {
+                    return (
+                      <div className="mt-2 text-xs text-gray-600">
+                        Expires (from edited payload): {new Date(exp * 1000).toLocaleString()}
+                      </div>
+                    )
+                  }
+                } catch {}
+                return null
+              })()}
+            </div>
 
                 <div className="flex space-x-3">
                   <button
