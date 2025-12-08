@@ -2,8 +2,11 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { listFaults, readFault, deleteFault } from '@/lib/faults'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: Request, { params }: { params: { slug: string[] } }) {
     const { slug } = params
+    const { searchParams } = new URL(req.url)
 
     // 1. List Entities: /v1/[collection]
     if (slug.length === 1) {
@@ -43,8 +46,19 @@ export async function GET(req: Request, { params }: { params: { slug: string[] }
         if (!entity) return NextResponse.json({ error: 'Entity not found' }, { status: 404 })
 
         if (resource === 'faults') {
-            const faults = await listFaults(entityId)
-            return NextResponse.json({ items: faults })
+            try {
+                const filters = {
+                    status: searchParams.get('status') || undefined,
+                    severity: searchParams.get('severity') || undefined,
+                    code: searchParams.get('code') || undefined,
+                    limit: Number(searchParams.get('limit')) || undefined,
+                    offset: Number(searchParams.get('offset')) || undefined,
+                }
+                const faults = await listFaults(entityId, filters)
+                return NextResponse.json({ items: faults })
+            } catch (e) {
+                return NextResponse.json({ error: (e as Error).message }, { status: 500 })
+            }
         }
 
         // Fallback for implemented resources

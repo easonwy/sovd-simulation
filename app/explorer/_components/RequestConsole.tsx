@@ -172,7 +172,8 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
   const getUrl = () => {
     const params = new URLSearchParams()
     queryParams.forEach(p => {
-      if (p.key) params.append(p.key, p.value)
+      // Only append if both key and value are present (unless it's a flag param like include-schema)
+      if (p.key && p.value !== '') params.append(p.key, p.value)
     })
     const paramString = params.toString()
     return paramString ? `${path}?${paramString}` : path
