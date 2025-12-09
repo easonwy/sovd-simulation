@@ -4,6 +4,7 @@ import { checkPermissions as checkPermissionsUtil } from './permissions-util'
 const prisma = new PrismaClient()
 
 export type Role = 'Viewer' | 'Developer' | 'Admin'
+export type PermissionPolicy = 'allow' | 'deny'
 
 /**
  * Permission Check Result
@@ -35,25 +36,13 @@ export function isAllowedLegacy(role: Role | undefined, method: string, path: st
   return false
 }
 
-/**
- * Enhanced permission check (supports specific permission list)
- */
 export async function isAllowed(
   role: Role | undefined, 
   method: string, 
   path: string,
   userPermissions?: string[],
   denyPermissions?: string[],
-  defaultPolicy: 'allow' | 'deny'
-): Promise<boolean>
-
-export async function isAllowed(
-  role: Role | undefined, 
-  method: string, 
-  path: string,
-  userPermissions?: string[],
-  denyPermissions?: string[],
-  defaultPolicy: 'allow' | 'deny' = 'deny'
+  defaultPolicy: PermissionPolicy = 'deny'
 ): Promise<boolean> {
   if (!role) return false
   
@@ -72,7 +61,7 @@ export async function isAllowed(
 /**
  * Permission check based on permission list
  */
-function checkPermissions(userPermissions: string[], method: string, path: string, denyPermissions?: string[], defaultPolicy: 'allow' | 'deny' = 'deny'): boolean {
+function checkPermissions(userPermissions: string[], method: string, path: string, denyPermissions?: string[], defaultPolicy: PermissionPolicy = 'deny'): boolean {
   return checkPermissionsUtil(userPermissions, method, path, denyPermissions, defaultPolicy)
 }
 
@@ -103,7 +92,7 @@ export async function checkPermissionDetails(
   path: string,
   userPermissions?: string[],
   denyPermissions?: string[],
-  defaultPolicy: 'allow' | 'deny' = 'deny'
+  defaultPolicy: PermissionPolicy = 'deny'
 ): Promise<PermissionCheckResult> {
   if (!role) {
     return {
