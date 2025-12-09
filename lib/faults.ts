@@ -131,7 +131,7 @@ export async function createFault(entityId: string, data: FaultData) {
     // Log fault creation
     await prisma.logEntry.create({
       data: {
-        entityId,
+        entityId: entity.id,
         severity: 'warning',
         message: `Fault ${fault.code} created`,
         category: 'fault',
@@ -178,7 +178,7 @@ export async function confirmFault(entityId: string, code: string) {
     // Log confirmation
     await prisma.logEntry.create({
       data: {
-        entityId,
+        entityId: entity.id,
         severity: 'info',
         message: `Fault ${code} confirmed`,
         category: 'fault',
@@ -225,7 +225,7 @@ export async function clearFault(entityId: string, code: string) {
     // Log resolution
     await prisma.logEntry.create({
       data: {
-        entityId,
+        entityId: entity.id,
         severity: 'info',
         message: `Fault ${code} cleared`,
         category: 'fault',
@@ -313,7 +313,7 @@ export async function deleteFault(entityId: string, code: string) {
     // Log deletion
     await prisma.logEntry.create({
       data: {
-        entityId,
+        entityId: entity.id,
         severity: 'info',
         message: `Fault ${code} deleted`,
         category: 'fault',

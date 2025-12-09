@@ -259,11 +259,11 @@ export async function completeOperationExecution(
         severity: result.status === 'completed' ? 'info' : 'error',
         message: `Operation ${execution.operationId} ${result.status}`,
         category: 'operation',
-        metadata: {
+        metadata: JSON.stringify({
           operationId: execution.operationId,
           executionId,
           status: result.status
-        },
+        }),
         timestamp: new Date()
       }
     })
