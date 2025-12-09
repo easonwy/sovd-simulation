@@ -17,6 +17,7 @@ export interface EnhancedTokenPayload {
   // New extended information
   oid: string;           // Organization ID, supports multi-tenant
   permissions: string[]; // Specific permission list
+  denyPermissions?: string[];
   scope: string;         // Scope
   clientId?: string;     // Client ID
 
@@ -186,13 +187,13 @@ AQIDAQAB
       const exp = now + this.parseExpiresIn(expiresIn);
 
       // Build complete payload
-      const fullPayload: EnhancedTokenPayload = {
+      const fullPayload = {
         ...payload,
         jti,
         iat: now,
         exp,
         nbf: options.notBefore ? now + this.parseExpiresIn(options.notBefore) : undefined
-      };
+      } as EnhancedTokenPayload;
 
       // Create JWT
       const jwt = new SignJWT(fullPayload)

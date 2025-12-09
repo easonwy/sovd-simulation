@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser Token Parser Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        textarea { width: 100%; min-height: 100px; margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .result { background: #f8f9fa; padding: 15px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #007bff; }
+        .error { background: #f8d7da; border-left-color: #dc3545; }
+        .success { background: #d4edda; border-left-color: #28a745; }
+        pre { white-space: pre-wrap; word-break: break-all; font-size: 12px; }
+        .token-valid { color: #28a745; font-weight: bold; }
+        .token-invalid { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Browser Token Parser Test</h1>
+        <p>Test the browser-compatible JWT token parsing functions.</p>
+
+        <h3>Sample Token:</h3>
+        <textarea id="sampleToken" readonly></textarea>
+        
+        <h3>Test Your Own Token:</h3>
+        <textarea id="testToken" placeholder="Paste your JWT token here..."></textarea>
+        
+        <div>
+            <button onclick="testSampleToken()">Test Sample Token</button>
+            <button onclick="testCustomToken()">Test Custom Token</button>
+            <button onclick="generateSampleToken()">Generate New Sample</button>
+            <button onclick="clearAll()">Clear All</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Browser-compatible base64url decoding
+        function base64UrlDecode(str) {
+            str += '=='.substring(0, (4 - str.length % 4) % 4);
+            str = str.replace(/-/g, '+').replace(/_/g, '/');
+            try {
+                return decodeURIComponent(escape(atob(str)));
+            } catch (error) {
+                throw new Error('Failed to decode base64url string: ' + error.message);
+            }
+        }
+
+        // Parse JWT token in browser environment
+        function parseTokenBrowser(token) {
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) {
+                    return null;
+                }
+                const payloadJson = base64UrlDecode(parts[1]);
+                return JSON.parse(payloadJson);
+            } catch (error) {
+                console.error('Token parsing error:', error);
+                return null;
+            }
+        }
+
+        // Parse JWT header in browser environment
+        function parseHeaderBrowser(token) {
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) {
+                    return null;
+                }
+                const headerJson = base64UrlDecode(parts[0]);
+                return JSON.parse(headerJson);
+            } catch (error) {
+                console.error('Header parsing error:', error);
+                return null;
+            }
+        }
+
+        // Validate JWT format
+        function isValidJWTFormat(token) {
+            if (!token || typeof token !== 'string') {
+                return false;
+            }
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                return false;
+            }
+            try {
+                parts.forEach(part => {
+                    if (!part) throw new Error('Empty part');
+                    base64UrlDecode(part);
+                });
+                return true;
+            } catch {
+                return false;
+            }
+        }
+
+        // Generate a proper sample token
+        function generateSampleToken() {
+            const header = {
+                "alg": "RS256",
+                "typ": "JWT"
+            };
+
+            const payload = {
+                "userId": "demo-user-" + Math.floor(Math.random() * 1000),
+                "email": "demo@sovd-explorer.com",
+                "role": "Developer",
+                "oid": "demo-org-1",
+                "permissions": ["read:data", "write:data", "read:faults"],
+                "scope": "api",
+                "jti": "demo-token-" + Math.floor(Math.random() * 10000),
+                "iat": Math.floor(Date.now() / 1000),
+                "exp": Math.floor(Date.now() / 1000) + (24 * 60 * 60)
+            };
+
+            // Base64URL encoding
+            function base64UrlEncode(str) {
+                const base64 = btoa(str);
+                return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+            }
+
+            const encodedHeader = base64UrlEncode(JSON.stringify(header));
+            const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+            const dummySignature = base64UrlEncode("demo-signature-" + Math.floor(Math.random() * 1000));
+
+            return `${encodedHeader}.${encodedPayload}.${dummySignature}`;
+        }
+
+        // Test a token and display results
+        function testToken(token, label) {
+            const results = document.getElementById('results');
+            
+            if (!token.trim()) {
+                results.innerHTML = '<div class="result error">Please enter a token to test.</div>';
+                return;
+            }
+
+            try {
+                const isValid = isValidJWTFormat(token);
+                const parts = token.split('.');
+                
+                let html = `<div class="result ${isValid ? 'success' : 'error'}">`;
+                html += `<h4>${label}</h4>`;
+                html += `<p>Token format: <span class="${isValid ? 'token-valid' : 'token-invalid'}">${isValid ? 'VALID' : 'INVALID'}</span></p>`;
+                html += `<p>Parts count: ${parts.length}</p>`;
+                
+                if (isValid) {
+                    const header = parseHeaderBrowser(token);
+                    const payload = parseTokenBrowser(token);
+                    
+                    html += '<h5>Header:</h5>';
+                    html += `<pre>${JSON.stringify(header, null, 2)}</pre>`;
+                    
+                    html += '<h5>Payload:</h5>';
+                    html += `<pre>${JSON.stringify(payload, null, 2)}</pre>`;
+                    
+                    html += '<h5>Signature:</h5>';
+                    html += `<pre>${parts[2]}</pre>`;
+                    
+                    if (payload) {
+                        const now = Math.floor(Date.now() / 1000);
+                        const isExpired = payload.exp && payload.exp < now;
+                        html += `<p>Expiration: ${isExpired ? '<span class="token-invalid">EXPIRED</span>' : '<span class="token-valid">VALID</span>'}</p>`;
+                    }
+                } else {
+                    html += '<p>❌ Token must have 3 parts separated by dots (header.payload.signature)</p>';
+                    html += '<p>❌ Each part must be base64url encoded</p>';
+                }
+                
+                html += '</div>';
+                results.innerHTML = html;
+                
+            } catch (error) {
+                results.innerHTML = `<div class="result error"><h4>${label}</h4><p>❌ Error: ${error.message}</p></div>`;
+            }
+        }
+
+        function testSampleToken() {
+            const token = document.getElementById('sampleToken').value;
+            testToken(token, 'Sample Token Test');
+        }
+
+        function testCustomToken() {
+            const token = document.getElementById('testToken').value;
+            testToken(token, 'Custom Token Test');
+        }
+
+        function generateSampleToken() {
+            const newToken = generateSampleToken();
+            document.getElementById('sampleToken').value = newToken;
+            testToken(newToken, 'New Sample Token');
+        }
+
+        function clearAll() {
+            document.getElementById('testToken').value = '';
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Initialize with a sample token
+        document.addEventListener('DOMContentLoaded', function() {
+            const initialToken = generateSampleToken();
+            document.getElementById('sampleToken').value = initialToken;
+        });
+    </script>
+</body>
+</html>

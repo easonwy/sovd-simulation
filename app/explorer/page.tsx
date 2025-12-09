@@ -3,16 +3,18 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Tree from './_components/Tree'
 import RequestConsole from './_components/RequestConsole'
+import TokenManager from './_components/TokenManager'
 
 export default function Page() {
   const router = useRouter()
-  const [selectedPath, setSelectedPath] = useState('/v1/Component')
+  const [selectedPath, setSelectedPath] = useState('/sovd/v1/Component')
   const [selectedMethod, setSelectedMethod] = useState('GET')
   const [token, setToken] = useState<string>('')
   const [userEmail, setUserEmail] = useState<string>('')
   const [userRole, setUserRole] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isTokenManagerOpen, setIsTokenManagerOpen] = useState(false)
 
   useEffect(() => {
     // Check if user is logged in
@@ -41,6 +43,11 @@ export default function Page() {
   function handleLogout() {
     localStorage.removeItem('sovd.token')
     router.push('/login')
+  }
+
+  function handleTokenUpdate(newToken: string) {
+    setToken(newToken)
+    localStorage.setItem('sovd.token', newToken)
   }
 
   function handleSelect(path: string, method: string) {
@@ -83,6 +90,17 @@ export default function Page() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsTokenManagerOpen(true)}
+            className="text-xs px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 rounded-lg transition-all border border-purple-500/20 hover:border-purple-500/30 font-medium flex items-center gap-1.5"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
+              <path d="M2 17L12 22L22 17"/>
+              <path d="M2 12L12 17L22 12"/>
+            </svg>
+            Token Manager
+          </button>
           {userRole === 'Admin' && (
             <a
               href="/admin"
@@ -158,6 +176,7 @@ export default function Page() {
               initialPath={selectedPath}
               initialMethod={selectedMethod}
               token={token}
+              onTokenManagerOpen={() => setIsTokenManagerOpen(true)}
             />
           </div>
         </div>
@@ -173,6 +192,14 @@ export default function Page() {
           ASAM Service-Oriented Vehicle Diagnostics
         </div>
       </div>
+
+      {/* Token Manager Dialog */}
+      <TokenManager
+        isOpen={isTokenManagerOpen}
+        onClose={() => setIsTokenManagerOpen(false)}
+        currentToken={token}
+        onTokenUpdate={handleTokenUpdate}
+      />
     </div>
   )
 }

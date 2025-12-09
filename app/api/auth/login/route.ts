@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { generateEnhancedToken } from '@/lib/enhanced-jwt'
+import { getRoleAccess } from '@/lib/rbac'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -59,7 +60,8 @@ export async function POST(req: NextRequest) {
 
 
         // Get user permissions
-        const permissions = await getUserPermissions(user.role)
+        const { allow: permissions, deny: denyPermissions } = await getRoleAccess(user.role as any)
+        const effectivePermissions = filterAllowsAgainstDenies(permissions, denyPermissions)
 
         // Use enhanced JWT tool to generate token
         const tokenResult = await generateEnhancedToken({
@@ -67,7 +69,8 @@ export async function POST(req: NextRequest) {
             email: user.email,
             role: user.role,
             oid: 'default', // Default organization ID, can be extended for multi-tenant later
-            permissions,
+            permissions: effectivePermissions,
+            denyPermissions,
             scope: 'api:access'
         })
 
@@ -78,7 +81,8 @@ export async function POST(req: NextRequest) {
                 id: user.id,
                 email: user.email,
                 role: user.role,
-                permissions
+                permissions: effectivePermissions,
+                denyPermissions
             }
         }, { status: 200 })
     } catch (error) {
@@ -141,4 +145,46 @@ function getBasePermissions(role: string): string[] {
     }
 
     return basePerms[role as keyof typeof basePerms] || []
+}
+
+function getBaseDenyPermissions(role: string): string[] {
+    if (role === 'Viewer') {
+        return [
+            'POST:/v1/*',
+            'PUT:/v1/*',
+            'DELETE:/v1/*'
+        ]
+    }
+    if (role === 'Developer') {
+        return [
+            'POST:/v1/Admin/*',
+            'PUT:/v1/Admin/*',
+            'DELETE:/v1/Admin/*'
+        ]
+    }
+    if (role === 'Admin') {
+        return [
+            'DELETE:/v1/*',
+            'POST:/v1/*',
+            'PUT:/v1/*',
+            'GET:/v1/Component/*/faults'
+        ]
+    }
+    return []
+}
+
+function filterAllowsAgainstDenies(allows: string[], denies: string[]): string[] {
+    if (!Array.isArray(denies) || denies.length === 0) return Array.from(new Set(allows))
+    const denyRegexes = denies.map(toRegexFromPattern).filter(Boolean) as RegExp[]
+    const result = allows.filter((perm) => {
+        if (perm === '*') return true
+        return !denyRegexes.some((rx) => rx.test(perm))
+    })
+    return Array.from(new Set(result))
+}
+
+function toRegexFromPattern(pattern: string): RegExp | null {
+    if (!pattern || typeof pattern !== 'string') return null
+    const escaped = pattern.replace(/[.+?^${}()|\[\]\\]/g, '\\$&').replace(/\*/g, '.*')
+    return new RegExp(`^${escaped}$`)
 }

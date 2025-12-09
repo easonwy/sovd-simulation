@@ -30,7 +30,9 @@ export async function POST(req: NextRequest) {
       payload.role as any,
       method,
       path,
-      payload.permissions
+      payload.permissions,
+      payload.denyPermissions,
+      'deny'
     )
 
     return NextResponse.json({

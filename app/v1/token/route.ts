@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateEnhancedToken } from '@/lib/enhanced-jwt'
 import { PrismaClient } from '@prisma/client'
+import { getRoleAccess } from '@/lib/rbac'
 
 const prisma = new PrismaClient()
 
@@ -35,8 +36,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'invalid_request' }, { status: 400 })
     }
 
-    // Get role permissions
-    const permissions = await getRolePermissions(role)
+    const { allow: permissions, deny: denyPermissions } = await getRoleAccess(role as any)
+    const effectivePermissions = filterAllowsAgainstDenies(permissions, denyPermissions)
 
     // Use enhanced JWT tool to generate token
     const tokenResult = await generateEnhancedToken({
@@ -44,7 +45,8 @@ export async function POST(req: NextRequest) {
       email: 'system@sovd.local',
       role,
       oid: 'default',
-      permissions,
+      permissions: effectivePermissions,
+      denyPermissions,
       scope: 'api:access',
       clientId: 'sovd-cli'
     }, {
@@ -58,7 +60,8 @@ export async function POST(req: NextRequest) {
       token_type: 'Bearer',
       expires_in: Math.floor((tokenResult.expiresAt.getTime() - Date.now()) / 1000),
       scope: 'api:access',
-      permissions
+      permissions: effectivePermissions,
+      denyPermissions
     }, { status: 200 })
   } catch (error) {
     console.error('Token generation error:', error)
@@ -120,4 +123,50 @@ function getBasePermissions(role: string): string[] {
   }
 
   return basePerms[role as keyof typeof basePerms] || []
+}
+
+function getBaseDenyPermissions(role: string): string[] {
+  if (role === 'Viewer') {
+    return [
+      'POST:/v1/*',
+      'PUT:/v1/*',
+      'DELETE:/v1/*'
+    ]
+  }
+  if (role === 'Developer') {
+    return [
+      'POST:/v1/Admin/*',
+      'PUT:/v1/Admin/*',
+      'DELETE:/v1/Admin/*'
+    ]
+  }
+  if (role === 'Admin') {
+    return [
+      'DELETE:/v1/*',
+      'POST:/v1/*',
+      'PUT:/v1/*',
+      'GET:/v1/Component/*/faults'
+    ]
+  }
+  return []
+}
+
+function filterAllowsAgainstDenies(allows: string[], denies: string[]): string[] {
+  if (!Array.isArray(denies) || denies.length === 0) return Array.from(new Set(allows))
+  const denyRegexes = denies.map(toRegexFromPattern).filter(Boolean) as RegExp[]
+  const result = allows.filter((perm) => {
+    // keep global wildcard; rely on middleware deny precedence
+    if (perm === '*') return true
+    // drop if any deny regex matches
+    return !denyRegexes.some((rx) => rx.test(perm))
+  })
+  // dedupe
+  return Array.from(new Set(result))
+}
+
+function toRegexFromPattern(pattern: string): RegExp | null {
+  if (!pattern || typeof pattern !== 'string') return null
+  // escape regex special chars except '*'
+  const escaped = pattern.replace(/[.+?^${}()|\[\]\\]/g, '\\$&').replace(/\*/g, '.*')
+  return new RegExp(`^${escaped}$`)
 }

@@ -10,10 +10,13 @@ import { getClientIp, getUserAgent } from './lib/request-utils'
 export async function middleware(req: NextRequest) {
   const startTime = Date.now()
 
-  const { pathname } = req.nextUrl
+  const url = req.nextUrl.clone()
+  const { pathname } = url
+  const hasPrefix = pathname.startsWith('/sovd/v1/')
+  const normalizedPath = hasPrefix ? pathname.replace(/^\/sovd\/v1/, '/v1') : pathname
 
   // Whitelist paths, no authentication required
-  if (pathname.startsWith('/v1/authorize') || pathname.startsWith('/v1/token')) {
+  if (normalizedPath.startsWith('/v1/authorize') || normalizedPath.startsWith('/v1/token')) {
     return NextResponse.next()
   }
 
@@ -65,25 +68,36 @@ export async function middleware(req: NextRequest) {
     // Actually, I can replace the whole block and the imports in one go if I use multi_replace, but I am using replace_file_content.
     // I will use checkPermissions from the import. I need to update the import statement too.
 
-    const isAllowed = checkPermissions(currentPermissions, req.method, pathname)
+    const isAdminRoute = normalizedPath.startsWith('/api/admin/')
+    const isAllowed = isAdminRoute
+      ? role === 'Admin'
+      : checkPermissions(
+          currentPermissions,
+          req.method,
+          normalizedPath,
+          payload.denyPermissions || [],
+          'deny'
+        )
 
     const duration = Date.now() - startTime
 
     if (!isAllowed) {
       // Record permission denial event
 
-      console.log(`[Middleware] Permission denied for ${payload.email} to ${req.method} ${pathname}`)
+      console.log(`[Middleware] Permission denied for ${payload.email} to ${req.method} ${normalizedPath}`)
 
       return NextResponse.json({
         error: 'forbidden',
         code: 'INSUFFICIENT_PERMISSIONS',
-        message: `Role '${role}' does not have permission to ${req.method} ${pathname}`,
+        message: isAdminRoute
+          ? `Role '${role}' does not have permission to access admin route ${req.method} ${normalizedPath}`
+          : `Role '${role}' does not have permission to ${req.method} ${normalizedPath}`,
         details: {
-          requiredRole: getRequiredRole(req.method, pathname),
+          requiredRole: getRequiredRole(req.method, normalizedPath),
           currentRole: role,
           currentPermissions: payload.permissions,
-          requiredPermissions: [`${req.method}:${pathname}`],
-          resource: pathname,
+          requiredPermissions: [`${req.method}:${normalizedPath}`],
+          resource: normalizedPath,
           action: req.method,
           suggestion: 'Contact your administrator to request access'
         }
@@ -100,13 +114,18 @@ export async function middleware(req: NextRequest) {
     requestHeaders.set('x-user-role', payload.role)
     requestHeaders.set('x-user-oid', payload.oid)
     requestHeaders.set('x-user-permissions', JSON.stringify(payload.permissions))
+    if (payload.denyPermissions) {
+      requestHeaders.set('x-user-deny-permissions', JSON.stringify(payload.denyPermissions))
+    }
     requestHeaders.set('x-token-id', payload.jti)
 
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders
-      }
-    })
+    if (hasPrefix) {
+      const rewriteUrl = req.nextUrl.clone()
+      rewriteUrl.pathname = normalizedPath
+      return NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } })
+    }
+
+    return NextResponse.next({ request: { headers: requestHeaders } })
   } catch (error) {
     console.error('Middleware authentication error:', error)
 
@@ -137,5 +156,5 @@ function getRequiredRole(method: string, pathname: string): string {
 }
 
 export const config = {
-  matcher: ['/v1/:path*', '/api/admin/:path*']
+  matcher: ['/v1/:path*', '/api/admin/:path*', '/sovd/v1/:path*']
 }

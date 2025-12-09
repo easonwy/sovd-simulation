@@ -6,6 +6,7 @@ interface RequestConsoleProps {
   initialPath?: string
   initialMethod?: string
   token?: string
+  onTokenManagerOpen?: () => void
 }
 
 function useToken() {
@@ -117,14 +118,14 @@ const syntaxHighlight = (json: string | object) => {
   });
 }
 
-export default function RequestConsole({ initialPath, initialMethod, token: propToken }: RequestConsoleProps) {
+export default function RequestConsole({ initialPath, initialMethod, token: propToken, onTokenManagerOpen }: RequestConsoleProps) {
   const internalToken = useToken()
   const token = typeof propToken !== 'undefined' ? propToken : internalToken
 
-  const [path, setPath] = useState(initialPath || '/v1/Component')
+  const [path, setPath] = useState(initialPath || '/sovd/v1/Component')
   // Sync prop changes to state
   useEffect(() => {
-    if (initialPath) setPath(initialPath)
+    if (initialPath) setPath(withPrefix(initialPath))
   }, [initialPath])
 
   const [method, setMethod] = useState<'GET' | 'POST' | 'PUT' | 'DELETE'>(
@@ -176,6 +177,14 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
   const [loading, setLoading] = useState(false)
   const [responseTab, setResponseTab] = useState<ResponseTab>('body')
 
+  const API_PREFIX = '/sovd'
+
+  function withPrefix(p: string) {
+    if (p.startsWith(API_PREFIX)) return p
+    if (p.startsWith('/v1/')) return `${API_PREFIX}${p}`
+    return p
+  }
+
   // Derive final URL
   const getUrl = () => {
     const params = new URLSearchParams()
@@ -184,7 +193,8 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
       if (p.key && p.value !== '') params.append(p.key, p.value)
     })
     const paramString = params.toString()
-    return paramString ? `${path}?${paramString}` : path
+    const base = paramString ? `${path}?${paramString}` : path
+    return withPrefix(base)
   }
 
   // Sync token to headers when available
@@ -357,6 +367,21 @@ export default function RequestConsole({ initialPath, initialMethod, token: prop
             <path d="M15 18l-6-6 6-6"/>
           </svg>
         </button>
+
+        {/* Token Manager Button */}
+        {onTokenManagerOpen && (
+          <button
+            onClick={onTokenManagerOpen}
+            className="p-1.5 bg-purple-50 border border-purple-200 rounded-md hover:bg-purple-100 text-purple-600 transition-all"
+            title="Open Token Manager"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
+              <path d="M2 17L12 22L22 17"/>
+              <path d="M2 12L12 17L22 12"/>
+            </svg>
+          </button>
+        )}
 
         {/* Method & URL Input Group - More compact */}
         <div className="flex-1 flex shadow-sm rounded-lg border border-slate-200 overflow-hidden h-9 transition-shadow focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300">

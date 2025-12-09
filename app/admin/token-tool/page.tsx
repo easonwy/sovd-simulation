@@ -8,6 +8,7 @@ interface TokenPayload {
   role: string
   oid: string
   permissions: string[]
+  denyPermissions?: string[]
   scope: string
   clientId?: string
   jti: string
@@ -39,7 +40,8 @@ export default function TokenTool() {
     scope: 'api:access',
     clientId: '',
     expiresIn: '24h',
-    permissions: ''
+    permissions: '',
+    denyPermissions: ''
   })
 
   // Permission check
@@ -68,6 +70,9 @@ export default function TokenTool() {
       const permissions = formData.permissions 
         ? formData.permissions.split(',').map(p => p.trim()).filter(p => p)
         : getDefaultPermissions(formData.role)
+      const denyPermissions = formData.denyPermissions
+        ? formData.denyPermissions.split(',').map(p => p.trim()).filter(p => p)
+        : []
 
       const response = await fetch('/api/admin/token-tool/generate', {
         method: 'POST',
@@ -76,7 +81,8 @@ export default function TokenTool() {
         },
         body: JSON.stringify({
           ...formData,
-          permissions
+          permissions,
+          denyPermissions
         })
       })
 
@@ -309,6 +315,16 @@ export default function TokenTool() {
                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20"
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Deny permissions (optional, comma-separated)</label>
+              <textarea 
+                value={formData.denyPermissions}
+                onChange={(e) => setFormData({...formData, denyPermissions: e.target.value})}
+                placeholder="Example: DELETE:/v1/App/*, POST:/v1/Admin/*"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20"
+              />
+            </div>
             
             <button 
               onClick={generateToken}
@@ -429,6 +445,9 @@ export default function TokenTool() {
                   <div><span className="font-medium">Issue Time:</span> {formatTime(parsedToken.iat)}</div>
                   <div><span className="font-medium">Expiration Time:</span> {formatTime(parsedToken.exp)}</div>
                   <div><span className="font-medium">Permission Count:</span> {parsedToken.permissions.length}</div>
+                  {parsedToken.denyPermissions && (
+                    <div><span className="font-medium">Deny Count:</span> {parsedToken.denyPermissions.length}</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -479,6 +498,19 @@ export default function TokenTool() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                 {parsedToken.permissions.map((permission, index) => (
                   <div key={index} className="bg-gray-100 px-3 py-2 rounded text-sm font-mono break-all">
+                    {permission}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {parsedToken && parsedToken.denyPermissions && parsedToken.denyPermissions.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-medium mb-3 text-gray-700">Deny Permission List</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                {parsedToken.denyPermissions.map((permission, index) => (
+                  <div key={index} className="bg-red-50 px-3 py-2 rounded text-sm font-mono break-all text-red-800">
                     {permission}
                   </div>
                 ))}

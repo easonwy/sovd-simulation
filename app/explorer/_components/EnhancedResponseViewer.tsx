@@ -22,16 +22,35 @@ export default function EnhancedResponseViewer({
   const [activeTab, setActiveTab] = useState<'body' | 'headers'>('body')
   const [viewMode, setViewMode] = useState<'formatted' | 'raw' | 'table'>('formatted')
 
+  function remapUrlString(s: string): string {
+    return s.replace(/\/(v1\/)/g, '/sovd/$1').replace(/\/sovd\/v1\//g, '/sovd/v1/')
+  }
+
+  function remapBodyForDisplay(body: any): any {
+    if (typeof body === 'string') return remapUrlString(body)
+    if (Array.isArray(body)) return body.map(remapBodyForDisplay)
+    if (body && typeof body === 'object') {
+      const out: Record<string, any> = {}
+      for (const [k, v] of Object.entries(body)) {
+        out[k] = typeof v === 'string' ? remapUrlString(v) : remapBodyForDisplay(v)
+      }
+      return out
+    }
+    return body
+  }
+
+  const displayBody = remapBodyForDisplay(response?.body)
+
   const copyToClipboard = () => {
     if (response?.body) {
-      const text = typeof response.body === 'string' ? response.body : JSON.stringify(response.body, null, 2)
+      const text = typeof displayBody === 'string' ? displayBody : JSON.stringify(displayBody, null, 2)
       navigator.clipboard.writeText(text)
     }
   }
 
   const downloadJSON = () => {
     if (response?.body) {
-      const text = typeof response.body === 'string' ? response.body : JSON.stringify(response.body, null, 2)
+      const text = typeof displayBody === 'string' ? displayBody : JSON.stringify(displayBody, null, 2)
       const blob = new Blob([text], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -69,15 +88,15 @@ export default function EnhancedResponseViewer({
         <div className="flex-1">
           <textarea
             className="w-full h-full p-3 font-mono text-xs text-slate-700 bg-white resize-none border-0 focus:outline-none custom-scrollbar"
-            value={typeof response.body === 'string' ? response.body : JSON.stringify(response.body, null, 2)}
+            value={typeof displayBody === 'string' ? displayBody : JSON.stringify(displayBody, null, 2)}
             readOnly
           />
         </div>
       )
     }
 
-    if (viewMode === 'table' && typeof response.body === 'object' && response.body !== null) {
-      const entries = Object.entries(response.body)
+    if (viewMode === 'table' && typeof displayBody === 'object' && displayBody !== null) {
+      const entries = Object.entries(displayBody as Record<string, any>)
       return (
         <div className="p-3 overflow-auto custom-scrollbar">
           <div className="border border-slate-200 rounded-lg overflow-hidden">
@@ -112,7 +131,7 @@ export default function EnhancedResponseViewer({
         <pre
           className="text-xs font-mono whitespace-pre-wrap text-slate-700 leading-relaxed max-w-full p-3 block h-full response-body scrollable-content"
           dangerouslySetInnerHTML={{
-            __html: syntaxHighlight(typeof response.body === 'string' ? response.body : JSON.stringify(response.body, null, 2))
+            __html: syntaxHighlight(typeof displayBody === 'string' ? displayBody : JSON.stringify(displayBody, null, 2))
           }}
           style={{ 
             wordBreak: 'break-word', 
