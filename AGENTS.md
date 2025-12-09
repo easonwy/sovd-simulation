@@ -23,7 +23,8 @@ The platform implements enterprise-grade Role-Based Access Control (RBAC) with p
 - `@tanstack/react-table` - Data table components
 - `jose` - JWT token handling
 - `recharts` - Data visualization
-- `openapi-typescript` - Type generation from OpenAPI specs
+- `commander` - CLI tools
+- `bcryptjs` - Password hashing
 
 ## Project Structure
 
@@ -38,23 +39,32 @@ app/                          # Next.js App Router
 └── login/                   # Authentication UI
 
 lib/                         # Shared utilities
-├── auth.ts                  # JWT token handling
+├── enhanced-jwt.ts          # JWT token handling (Edge Runtime compatible)
 ├── rbac.ts                  # Role-based access control
 ├── entities.ts              # SOVD entity management
 ├── data.ts                  # Data value operations
 ├── faults.ts                # Fault management
-└── operations.ts            # Operation execution
+├── operations.ts            # Operation execution
+├── permissions-util.ts      # Permission checking utilities
+├── audit-logger.ts          # Audit logging
+└── browser-token-utils.ts   # Browser token management
 
 prisma/                      # Database schema and migrations
 ├── schema.prisma            # Prisma schema definition
-└── seed.js                  # Database seeding
+└── seed.ts                  # Database seeding
 
 tests/                       # Test suites
 ├── integration/             # Integration tests
 └── setup.ts                 # Test configuration
 
-src/generated/               # Generated TypeScript types
-└── sovd.d.ts               # OpenAPI-generated types
+scripts/                     # Utility scripts
+├── token-cli.cjs            # JWT token management CLI
+├── generate-keys.js         # Key generation utilities
+└── api-smoke.mjs            # API smoke tests
+
+docs/                        # Documentation
+├── api-specs/               # OpenAPI specifications
+└── asam/                    # ASAM SOVD specification documents
 ```
 
 ## Build and Development Commands
@@ -70,22 +80,28 @@ npm run start            # Start production server
 ```bash
 npm test                 # Run all tests
 npm run test:watch       # Run tests in watch mode
-npm run test:coverage    # Run tests with coverage report
+npm run test:coverage    # Run tests with coverage report (minimum 70%)
 npm run test:api         # Run API smoke tests
 ```
 
 ### Database
 ```bash
 npm run db:push          # Push schema changes to database
-npm run db:migrate:dev   # Create and apply migrations
+npm run db:migrate       # Create and apply migrations
 npm run db:studio        # Open Prisma Studio
 npm run db:seed          # Seed database with initial data
 ```
 
 ### Code Quality
 ```bash
+npm run lint             # Run ESLint
 npm run typecheck        # Run TypeScript type checking
-npm run generate:types   # Generate types from OpenAPI specification
+```
+
+### Utility Scripts
+```bash
+npm run generate-keys    # Generate JWT keys
+npm run token            # JWT token management CLI
 ```
 
 ## Architecture Details
@@ -107,6 +123,12 @@ Resource types: `data`, `data-lists`, `faults`, `operations`, `locks`, `modes`, 
 3. All API requests include JWT in Authorization header
 4. Middleware validates token and enforces RBAC permissions
 
+### Enhanced JWT Implementation
+- **Edge Runtime Compatible**: Uses `jose` library with PEM strings
+- **Multi-tenant Support**: Includes organization ID (oid) and permissions
+- **Security Features**: JWT ID (jti) for replay attack prevention
+- **Flexible Claims**: Supports custom fields and extended metadata
+
 ### RBAC Permission Matrix
 
 | Role | GET | POST | PUT | DELETE |
@@ -119,48 +141,29 @@ Special restrictions:
 - Developers cannot access `/locks` endpoints (except GET)
 - Only Admins can perform destructive DELETE operations (except fault clearing)
 
-### Data Flow
-1. **Discovery**: Explorer fetches available entities via `/v1/{entity-collection}`
-2. **Resource Navigation**: Tree structure built from entity capabilities
-3. **Request Construction**: Dynamic UI builds SOVD-compliant requests
-4. **Permission Check**: Middleware validates JWT and RBAC rules
-5. **Response Processing**: Data visualization with schema/data separation
+### Middleware Configuration
+- **Path Matching**: `/v1/:path*`, `/api/admin/:path*`, `/sovd/v1/:path*`
+- **Permission Checking**: Uses token-based permissions (no DB calls in middleware)
+- **Header Injection**: Adds user context to request headers
+- **Edge Runtime**: Fully compatible with Vercel Edge Runtime
 
-## Development Guidelines
+## Database Schema
 
-### Code Style
-- TypeScript strict mode enabled
-- Path aliases configured (`@/*` maps to root directory)
-- React functional components with TypeScript
-- Consistent error handling with structured responses
-
-### API Response Format
-All API responses follow SOVD V1.0 specification with consistent error handling:
-
-```typescript
-// Success response
-{
-  "data": any,
-  "schema"?: any, // when include-schema=true
-  "timestamp": string
-}
-
-// Error response
-{
-  "error": string,
-  "details"?: any,
-  "timestamp": string
-}
-```
-
-### Database Schema
-Key entities managed through Prisma ORM:
+### Core Entities
 - **User**: Authentication and role management
 - **SOVDEntity**: Components, apps, areas, functions
 - **DataValue**: Dynamic/static data points with timestamps
 - **Fault**: Diagnostic trouble codes with status tracking
 - **Operation**: Executable operations with parameter schemas
 - **Permission**: RBAC configuration with path patterns
+- **AuditLog**: Security and compliance tracking
+- **DataSnapshot**: Time-series data for visualization
+
+### Key Features
+- **Cascading Deletes**: Maintains referential integrity
+- **Unique Constraints**: Prevents duplicate entries
+- **Indexing**: Optimized for common query patterns
+- **JSON Storage**: Flexible metadata and configuration storage
 
 ## Testing Strategy
 
@@ -175,12 +178,19 @@ Key entities managed through Prisma ORM:
 - **Integration Tests**: API endpoint testing with database
 - **E2E Tests**: Complete user workflows
 
+### Test Configuration
+- **Jest**: TypeScript support with ts-jest
+- **Database**: Clean state between tests
+- **Timeout**: 10 seconds for integration tests
+- **Coverage**: Enforced minimum thresholds
+
 ## Security Considerations
 
 ### Authentication
-- JWT tokens with configurable expiration (default 1 hour)
+- JWT tokens with configurable expiration (default 24 hours)
 - Role-based access control enforced at API gateway
 - Token validation on every protected request
+- Support for multi-tenant scenarios
 
 ### Data Protection
 - Database connection strings in environment variables
@@ -188,10 +198,11 @@ Key entities managed through Prisma ORM:
 - Input validation on all API endpoints
 - SQL injection prevention through Prisma ORM
 
-### Deployment Security
-- Environment-specific configuration files
-- Database migrations for schema changes
-- Audit logging for compliance tracking
+### Key Management
+- Development and production key pairs included
+- RSA-256 algorithm for JWT signing
+- Automatic environment detection
+- Key rotation support
 
 ## Environment Configuration
 
@@ -223,4 +234,54 @@ The platform implements the complete ASAM SOVD V1.0 specification including:
 - **Software Updates**: Package management and execution
 - **Logging**: Structured log entries and configuration
 
-OpenAPI specification available at `docs/api-specs/sovd-api.yaml` with TypeScript types generated to `src/generated/sovd.d.ts`.
+OpenAPI specification available at `docs/api-specs/sovd-api.yaml` with comprehensive examples for all endpoints.
+
+## Development Guidelines
+
+### Code Style
+- TypeScript strict mode enabled
+- Path aliases configured (`@/*` maps to root directory)
+- React functional components with TypeScript
+- Consistent error handling with structured responses
+
+### API Response Format
+All API responses follow SOVD V1.0 specification with consistent error handling:
+
+```typescript
+// Success response
+{
+  "data": any,
+  "schema"?: any, // when include-schema=true
+  "timestamp": string
+}
+
+// Error response
+{
+  "error": string,
+  "details"?: any,
+  "timestamp": string
+}
+```
+
+### Error Handling
+- Structured error responses with codes
+- Detailed error messages for debugging
+- Proper HTTP status codes
+- Consistent timestamp formatting
+
+## Deployment Considerations
+
+### Production Requirements
+- MySQL database (SQLite for development only)
+- Secure JWT secret key
+- Environment-specific configuration
+- Database migrations for schema changes
+- Audit logging for compliance tracking
+
+### Performance Optimization
+- Database indexing for common queries
+- Middleware caching where appropriate
+- Efficient permission checking
+- Optimized Prisma queries
+
+This platform provides a robust, secure, and compliant solution for SOVD-based vehicle diagnostics and testing, with enterprise-grade features suitable for automotive software development workflows.
