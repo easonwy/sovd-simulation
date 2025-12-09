@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
       role, 
       oid, 
       permissions, 
+      denyPermissions,
       scope, 
       clientId,
       expiresIn,
@@ -89,6 +90,7 @@ export async function POST(request: NextRequest) {
         role,
         oid,
         permissions,
+        denyPermissions: denyPermissions || [],
         scope,
         clientId
       },
@@ -146,6 +148,7 @@ export async function PUT(request: NextRequest) {
       role: currentPayload.role,
       oid: currentPayload.oid,
       permissions: currentPayload.permissions,
+      denyPermissions: currentPayload.denyPermissions || [],
       scope: currentPayload.scope,
       clientId: currentPayload.clientId
     }, options)

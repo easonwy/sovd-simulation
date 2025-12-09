@@ -6,7 +6,7 @@ export const runtime = 'nodejs'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const {
+  const {
       role,
       email,
       userId,
@@ -14,7 +14,8 @@ export async function POST(req: NextRequest) {
       scope,
       clientId,
       expiresIn,
-      permissions
+      permissions,
+      denyPermissions
     } = body
 
     // 验证必要字段
@@ -32,6 +33,7 @@ export async function POST(req: NextRequest) {
       role,
       oid: oid || 'default',
       permissions: permissions || [],
+      denyPermissions: denyPermissions || [],
       scope: scope || 'api:access',
       clientId
     }, {

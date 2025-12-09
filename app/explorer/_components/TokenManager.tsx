@@ -189,6 +189,7 @@ export default function TokenManager({ isOpen, onClose, currentToken, onTokenUpd
         role: editedData.role,
         oid: editedData.oid,
         permissions: editedData.permissions,
+        denyPermissions: editedData.denyPermissions || [],
         scope: editedData.scope,
         clientId: editedData.clientId
       }, expiresOption ? { expiresIn: expiresOption } : undefined)
@@ -222,6 +223,7 @@ export default function TokenManager({ isOpen, onClose, currentToken, onTokenUpd
         role: 'Viewer',
         oid: 'org-1',
         permissions: ['read:data'],
+        denyPermissions: [],
         scope: 'api'
       })
 

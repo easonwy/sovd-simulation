@@ -68,7 +68,16 @@ export async function middleware(req: NextRequest) {
     // Actually, I can replace the whole block and the imports in one go if I use multi_replace, but I am using replace_file_content.
     // I will use checkPermissions from the import. I need to update the import statement too.
 
-    const isAllowed = checkPermissions(currentPermissions, req.method, normalizedPath)
+    const isAdminRoute = normalizedPath.startsWith('/api/admin/')
+    const isAllowed = isAdminRoute
+      ? role === 'Admin'
+      : checkPermissions(
+          currentPermissions,
+          req.method,
+          normalizedPath,
+          payload.denyPermissions || [],
+          'deny'
+        )
 
     const duration = Date.now() - startTime
 
@@ -80,7 +89,9 @@ export async function middleware(req: NextRequest) {
       return NextResponse.json({
         error: 'forbidden',
         code: 'INSUFFICIENT_PERMISSIONS',
-        message: `Role '${role}' does not have permission to ${req.method} ${normalizedPath}`,
+        message: isAdminRoute
+          ? `Role '${role}' does not have permission to access admin route ${req.method} ${normalizedPath}`
+          : `Role '${role}' does not have permission to ${req.method} ${normalizedPath}`,
         details: {
           requiredRole: getRequiredRole(req.method, normalizedPath),
           currentRole: role,
@@ -103,6 +114,9 @@ export async function middleware(req: NextRequest) {
     requestHeaders.set('x-user-role', payload.role)
     requestHeaders.set('x-user-oid', payload.oid)
     requestHeaders.set('x-user-permissions', JSON.stringify(payload.permissions))
+    if (payload.denyPermissions) {
+      requestHeaders.set('x-user-deny-permissions', JSON.stringify(payload.denyPermissions))
+    }
     requestHeaders.set('x-token-id', payload.jti)
 
     if (hasPrefix) {
