@@ -16,10 +16,17 @@ function useToken() {
   return token
 }
 
+const API_PREFIX = '/sovd'
+function withPrefix(p: string) {
+  if (p.startsWith(API_PREFIX)) return p
+  if (p.startsWith('/v1/')) return `${API_PREFIX}${p}`
+  return p
+}
+
 async function apiGet(path: string, token: string) {
   if (!token) return { status: 401, body: null, headers: {} }
   try {
-    const res = await fetch(path, { headers: { Authorization: `Bearer ${token}` } })
+    const res = await fetch(withPrefix(path), { headers: { Authorization: `Bearer ${token}` } })
     const ct = res.headers.get('content-type') || ''
     const body = ct.includes('application/json') ? await res.json() : await res.text()
     return { status: res.status, body, headers: Object.fromEntries(res.headers.entries()) }
@@ -149,7 +156,7 @@ export default function Tree({ onSelect, token: propToken, lastResponse, isColla
 
     // If user is clicking GET on a faults collection, load and expand faults
     if (method === 'GET' && path.match(/\/faults$/)) {
-      const match = path.match(/\/v1\/([^/]+)\/([^/]+)\/faults$/)
+      const match = path.match(/\/(?:sovd\/)?v1\/([^/]+)\/([^/]+)\/faults$/)
       if (match) {
         const [, collection, entityId] = match
         const resourceKey = `${collection}/${entityId}/faults`
@@ -176,7 +183,7 @@ export default function Tree({ onSelect, token: propToken, lastResponse, isColla
       if (lastResponse.data?.items) {
         // Extract the resource key from the path
         // Example: /v1/Component/powertrain-control-unit/faults -> Component/powertrain-control-unit/faults
-        const match = lastResponse.path.match(/\/v1\/([^/]+)\/([^/]+)\/faults/)
+        const match = lastResponse.path.match(/\/(?:sovd\/)?v1\/([^/]+)\/([^/]+)\/faults/)
         if (match) {
           const [, collection, entityId] = match
           const key = `${collection}/${entityId}/faults`
@@ -287,7 +294,7 @@ export default function Tree({ onSelect, token: propToken, lastResponse, isColla
                           className="text-[10px] font-bold bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 px-1.5 py-0.5 rounded shadow-sm"
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleSelect(`/v1/${col}/${entityId}`, 'GET')
+                            handleSelect(`/sovd/v1/${col}/${entityId}`, 'GET')
                           }}
                         >
                           GET
@@ -330,7 +337,7 @@ export default function Tree({ onSelect, token: propToken, lastResponse, isColla
                                             method === 'DELETE' ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' :
                                               'bg-slate-100 text-slate-600 border-slate-200'
                                         }`}
-                                      onClick={() => handleSelect(`/v1/${col}/${entityId}/${resource.name}`, method)}
+                                      onClick={() => handleSelect(`/sovd/v1/${col}/${entityId}/${resource.name}`, method)}
                                     >
                                       {method}
                                     </button>
@@ -353,14 +360,14 @@ export default function Tree({ onSelect, token: propToken, lastResponse, isColla
                                       <div className="opacity-0 group-hover:opacity-100 flex gap-1 ml-1">
                                         <button
                                           className="text-[9px] bg-white border border-slate-200 px-1 rounded hover:text-blue-600"
-                                          onClick={() => handleSelect(`/v1/${col}/${entityId}/faults/${fault.code}`, 'GET')}
+                                          onClick={() => handleSelect(`/sovd/v1/${col}/${entityId}/faults/${fault.code}`, 'GET')}
                                           title="View Details"
                                         >
                                           GET
                                         </button>
                                         <button
                                           className="text-[9px] bg-white border border-slate-200 px-1 rounded hover:text-red-600"
-                                          onClick={() => handleSelect(`/v1/${col}/${entityId}/faults/${fault.code}`, 'DELETE')}
+                                          onClick={() => handleSelect(`/sovd/v1/${col}/${entityId}/faults/${fault.code}`, 'DELETE')}
                                           title="Clear Fault"
                                         >
                                           DEL

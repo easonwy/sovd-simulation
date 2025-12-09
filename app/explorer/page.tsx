@@ -7,7 +7,7 @@ import TokenManager from './_components/TokenManager'
 
 export default function Page() {
   const router = useRouter()
-  const [selectedPath, setSelectedPath] = useState('/v1/Component')
+  const [selectedPath, setSelectedPath] = useState('/sovd/v1/Component')
   const [selectedMethod, setSelectedMethod] = useState('GET')
   const [token, setToken] = useState<string>('')
   const [userEmail, setUserEmail] = useState<string>('')
