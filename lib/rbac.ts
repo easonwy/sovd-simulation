@@ -148,22 +148,17 @@ export async function checkPermissionDetails(
  */
 export async function getRolePermissions(role: Role): Promise<string[]> {
   try {
-    // Get role permissions from database
     const rolePermissions = await prisma.permission.findMany({
-      where: { role, OR: [{ access: 'allow' }, { access: 'ALLOW' }] },
+      where: { role },
       select: { method: true, pathPattern: true, access: true }
     })
 
-    // Convert to permission string format
-    const permissions = rolePermissions.map(perm => 
-      `${perm.method}:${perm.pathPattern}`
-    )
+    const fromDb = rolePermissions
+      .filter(p => normalizeAccess(p.access) === 'allow')
+      .map(p => `${p.method}:${p.pathPattern}`)
 
-    // Add base permissions
     const basePermissions = getBasePermissions(role)
-    
-    // Prefer DB configurations; fallback to base only when DB entries are empty
-    const source = permissions.length > 0 ? permissions : basePermissions
+    const source = fromDb.length > 0 ? fromDb : basePermissions
     return [...new Set(source)]
   } catch (error) {
     console.error('Failed to get role permissions:', error)
@@ -193,17 +188,17 @@ function getBasePermissions(role: Role): string[] {
 
 export async function getRoleAccess(role: Role): Promise<{ allow: string[]; deny: string[] }> {
   try {
-    const rolePermissions = await prisma.permission.findMany({
+    const rows = await prisma.permission.findMany({
       where: { role },
       select: { method: true, pathPattern: true, access: true }
     })
 
-    const allowFromDb = rolePermissions
-      .filter(p => typeof p.access === 'string' && p.access.toLowerCase() === 'allow')
+    const allowFromDb = rows
+      .filter(p => normalizeAccess(p.access) === 'allow')
       .map(p => `${p.method}:${p.pathPattern}`)
 
-    const denyFromDb = rolePermissions
-      .filter(p => typeof p.access === 'string' && p.access.toLowerCase() === 'deny')
+    const denyFromDb = rows
+      .filter(p => normalizeAccess(p.access) === 'deny')
       .map(p => `${p.method}:${p.pathPattern}`)
 
     const allowBase = getBasePermissions(role)
@@ -222,6 +217,21 @@ export async function getRoleAccess(role: Role): Promise<{ allow: string[]; deny
   }
 }
 
+function normalizeAccess(access?: string | null): 'allow' | 'deny' {
+  if (!access) return 'deny'
+  const t = access.trim()
+  const l = t.toLowerCase()
+  if (l === 'allow' || l === 'allowed' || l === 'true') return 'allow'
+  if (l === 'deny' || l === 'denied' || l === 'false') return 'deny'
+  try {
+    const obj = JSON.parse(t)
+    if (obj && typeof obj.allowed === 'boolean') {
+      return obj.allowed ? 'allow' : 'deny'
+    }
+  } catch {}
+  return 'deny'
+}
+
 function getBaseDenyPermissions(role: Role): string[] {
   if (role === 'Viewer') {
     return [
@@ -238,9 +248,7 @@ function getBaseDenyPermissions(role: Role): string[] {
     ]
   }
   if (role === 'Admin') {
-    return [
-      'GET:/sovd/v1/Component/*/faults'
-    ]
+    return []
   }
   return []
 }
